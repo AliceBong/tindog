@@ -9,4 +9,28 @@ It is always a good idea to setup a [GOPATH](https://golang.org/doc/code.html#GO
 Dependencies are managed using [dep](https://github.com/golang/dep).
 
 ### General
-1. Install and setup [Elasticsearch](https:
+1. Install and setup [Elasticsearch](https://www.elastic.co/products/elasticsearch)
+1. Go into `crawler/` and run `go build`
+1. Go into `frontend/` and run `go build`
+
+### Crawler
+1. See [crawler/README.md](crawler/README.md)
+
+### Frontend
+1. Run the frontend
+
+### Docker
+Setting up elasticsearch, crawler and frontend is significantly easier using Docker:
+
+	cp crawler/config.json .
+	docker-compose up -d
+
+Reload the crawler's config:
+
+	docker-compose kill -s USR1 crawler
+
+## Authors
+See [AUTHORS](AUTHORS). Do not forget to add yourself!
+
+## License
+See [LICENSE](LICENSE)
