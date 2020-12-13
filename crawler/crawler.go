@@ -199,4 +199,29 @@ func (crawlers *Crawlers) WalkFn(currentPath string, info FileInfo) {
 	urlCpy.Path = ""
 	infoUrl := urlCpy.String()
 
-	file
+	file := ModelFileEntry{
+		Filename: path.Base(info.URL.Path),
+		Size:     info.Size,
+		MimeType: info.MimeType,
+		ModTime:  info.ModTime,
+		Servers: []ModelFileServerEntry{{
+			Url:  infoUrl,
+			Path: infoPath,
+		}},
+	}
+
+	err := crawlers.Model.AddFileEntry(file)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (crawlers *Crawlers) Run() {
+	crawlers.WaitGroup.Wait()
+}
+
+func (crawlers *Crawlers) Quit() {
+	for _, crawler := range crawlers.Crawlers {
+		crawler.Terminate <- true
+	}
+}
