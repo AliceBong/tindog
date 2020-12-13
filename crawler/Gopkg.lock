@@ -35,4 +35,12 @@
 
 [solve-meta]
   analyzer-name = "dep"
-  analyzer-version 
+  analyzer-version = 1
+  input-imports = [
+    "github.com/barnslig/torture/lib/elastic",
+    "github.com/jlaffaye/ftp",
+    "github.com/temoto/robotstxt",
+    "golang.org/x/net/html",
+  ]
+  solver-name = "gps-cdcl"
+  solver-version = 1
