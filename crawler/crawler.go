@@ -125,4 +125,78 @@ OUTER:
 		}
 
 		// otherwise terminate the old crawler
-		log.Printf("server %s terminated\n", oldCr
+		log.Printf("server %s terminated\n", oldCrawler.Config.Entry)
+		oldCrawler.Terminate <- true
+	}
+
+	// 2. set new/updated crawlers
+	crawlers.Config = nextConfig
+	crawlers.Crawlers = nextCrawlers
+
+	// 3. (re-)start crawlers
+	for _, entry := range crawlers.Crawlers {
+
+		crawlers.WaitGroup.Add(1)
+		go func(entry *CrawlerEntry) {
+			defer crawlers.WaitGroup.Done()
+
+			// goroutine-internal error variable so we do not get in conflict with
+			// the outer err variable
+			var gErr error
+
+			// Parse the entry URL so we can determine the protocol
+			var entryUrl *url.URL
+			entryUrl, err = url.Parse(entry.Config.Entry)
+			if err != nil {
+				return
+			}
+
+			// Create a protocol-specific Crawler instance
+			var crawler Crawler
+
+			switch entryUrl.Scheme {
+			case "http", "https":
+				crawler, gErr = CreateHttpCrawler(entry.RawConfig)
+			case "ftp":
+				crawler, gErr = CreateFtpCrawler(entry.RawConfig)
+			default:
+				gErr = fmt.Errorf("Unkonwn protocol: %s", entryUrl.Scheme)
+			}
+
+			if gErr != nil {
+				log.Println(gErr)
+				return
+			}
+
+			defer crawler.Close()
+
+			// Create an infinite crawling loop
+			for {
+				select {
+				case <-entry.Terminate:
+					return
+				default:
+					gErr = crawler.Walk(crawlers.WalkFn)
+					if gErr != nil {
+						log.Println(gErr)
+						// Do not terminate as of Walk errors, just keep trying
+						// return
+					}
+					time.Sleep(entry.Config.TurnDelay)
+				}
+			}
+		}(entry)
+
+	}
+
+	return
+}
+
+func (crawlers *Crawlers) WalkFn(currentPath string, info FileInfo) {
+	// get url without path
+	urlCpy := *info.URL
+	infoPath := urlCpy.Path
+	urlCpy.Path = ""
+	infoUrl := urlCpy.String()
+
+	file
