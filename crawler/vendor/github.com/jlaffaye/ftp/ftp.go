@@ -388,3 +388,206 @@ func (c *ServerConn) List(path string) (entries []*Entry, err error) {
 
 // ChangeDir issues a CWD FTP command, which changes the current directory to
 // the specified path.
+func (c *ServerConn) ChangeDir(path string) error {
+	_, _, err := c.cmd(StatusRequestedFileActionOK, "CWD %s", path)
+	return err
+}
+
+// ChangeDirToParent issues a CDUP FTP command, which changes the current
+// directory to the parent directory.  This is similar to a call to ChangeDir
+// with a path set to "..".
+func (c *ServerConn) ChangeDirToParent() error {
+	_, _, err := c.cmd(StatusRequestedFileActionOK, "CDUP")
+	return err
+}
+
+// CurrentDir issues a PWD FTP command, which Returns the path of the current
+// directory.
+func (c *ServerConn) CurrentDir() (string, error) {
+	_, msg, err := c.cmd(StatusPathCreated, "PWD")
+	if err != nil {
+		return "", err
+	}
+
+	start := strings.Index(msg, "\"")
+	end := strings.LastIndex(msg, "\"")
+
+	if start == -1 || end == -1 {
+		return "", errors.New("Unsuported PWD response format")
+	}
+
+	return msg[start+1 : end], nil
+}
+
+// FileSize issues a SIZE FTP command, which Returns the size of the file
+func (c *ServerConn) FileSize(path string) (int64, error) {
+	_, msg, err := c.cmd(StatusFile, "SIZE %s", path)
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseInt(msg, 10, 64)
+}
+
+// Retr issues a RETR FTP command to fetch the specified file from the remote
+// FTP server.
+//
+// The returned ReadCloser must be closed to cleanup the FTP data connection.
+func (c *ServerConn) Retr(path string) (*Response, error) {
+	return c.RetrFrom(path, 0)
+}
+
+// RetrFrom issues a RETR FTP command to fetch the specified file from the remote
+// FTP server, the server will not send the offset first bytes of the file.
+//
+// The returned ReadCloser must be closed to cleanup the FTP data connection.
+func (c *ServerConn) RetrFrom(path string, offset uint64) (*Response, error) {
+	conn, err := c.cmdDataConnFrom(offset, "RETR %s", path)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Response{conn: conn, c: c}, nil
+}
+
+// Stor issues a STOR FTP command to store a file to the remote FTP server.
+// Stor creates the specified file with the content of the io.Reader.
+//
+// Hint: io.Pipe() can be used if an io.Writer is required.
+func (c *ServerConn) Stor(path string, r io.Reader) error {
+	return c.StorFrom(path, r, 0)
+}
+
+// StorFrom issues a STOR FTP command to store a file to the remote FTP server.
+// Stor creates the specified file with the content of the io.Reader, writing
+// on the server will start at the given file offset.
+//
+// Hint: io.Pipe() can be used if an io.Writer is required.
+func (c *ServerConn) StorFrom(path string, r io.Reader, offset uint64) error {
+	conn, err := c.cmdDataConnFrom(offset, "STOR %s", path)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(conn, r)
+	conn.Close()
+	if err != nil {
+		return err
+	}
+
+	_, _, err = c.conn.ReadResponse(StatusClosingDataConnection)
+	return err
+}
+
+// Rename renames a file on the remote FTP server.
+func (c *ServerConn) Rename(from, to string) error {
+	_, _, err := c.cmd(StatusRequestFilePending, "RNFR %s", from)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = c.cmd(StatusRequestedFileActionOK, "RNTO %s", to)
+	return err
+}
+
+// Delete issues a DELE FTP command to delete the specified file from the
+// remote FTP server.
+func (c *ServerConn) Delete(path string) error {
+	_, _, err := c.cmd(StatusRequestedFileActionOK, "DELE %s", path)
+	return err
+}
+
+// RemoveDirRecur deletes a non-empty folder recursively using
+// RemoveDir and Delete
+func (c *ServerConn) RemoveDirRecur(path string) error {
+	err := c.ChangeDir(path)
+	if err != nil {
+		return err
+	}
+	currentDir, err := c.CurrentDir()
+	if err != nil {
+		return err
+	}
+	entries, err := c.List(currentDir)
+	for _, entry := range entries {
+		if entry.Name != ".." && entry.Name != "." {
+			if entry.Type == EntryTypeFolder {
+				err = c.RemoveDirRecur(currentDir + "/" + entry.Name)
+				if err != nil {
+					return err
+				}
+			} else {
+				err = c.Delete(entry.Name)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	err = c.ChangeDirToParent()
+	if err != nil {
+		return err
+	}
+	err = c.RemoveDir(currentDir)
+	return err
+}
+
+// MakeDir issues a MKD FTP command to create the specified directory on the
+// remote FTP server.
+func (c *ServerConn) MakeDir(path string) error {
+	_, _, err := c.cmd(StatusPathCreated, "MKD %s", path)
+	return err
+}
+
+// RemoveDir issues a RMD FTP command to remove the specified directory from
+// the remote FTP server.
+func (c *ServerConn) RemoveDir(path string) error {
+	_, _, err := c.cmd(StatusRequestedFileActionOK, "RMD %s", path)
+	return err
+}
+
+// NoOp issues a NOOP FTP command.
+// NOOP has no effects and is usually used to prevent the remote FTP server to
+// close the otherwise idle connection.
+func (c *ServerConn) NoOp() error {
+	_, _, err := c.cmd(StatusCommandOK, "NOOP")
+	return err
+}
+
+// Logout issues a REIN FTP command to logout the current user.
+func (c *ServerConn) Logout() error {
+	_, _, err := c.cmd(StatusReady, "REIN")
+	return err
+}
+
+// Quit issues a QUIT FTP command to properly close the connection from the
+// remote FTP server.
+func (c *ServerConn) Quit() error {
+	c.conn.Cmd("QUIT")
+	return c.conn.Close()
+}
+
+// Read implements the io.Reader interface on a FTP data connection.
+func (r *Response) Read(buf []byte) (int, error) {
+	return r.conn.Read(buf)
+}
+
+// Close implements the io.Closer interface on a FTP data connection.
+// After the first call, Close will do nothing and return nil.
+func (r *Response) Close() error {
+	if r.closed {
+		return nil
+	}
+	err := r.conn.Close()
+	_, _, err2 := r.c.conn.ReadResponse(StatusClosingDataConnection)
+	if err2 != nil {
+		err = err2
+	}
+	r.closed = true
+	return err
+}
+
+// SetDeadline sets the deadlines associated with the connection.
+func (r *Response) SetDeadline(t time.Time) error {
+	return r.conn.SetDeadline(t)
+}
