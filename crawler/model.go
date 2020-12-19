@@ -94,4 +94,64 @@ func CreateModel(host string) (model *Model, err error) {
 
 func (model *Model) AddFileEntry(file ModelFileEntry) (err error) {
 	// Check if the file entry already exists, then count up and/or append to
-	//
+	// the servers array
+	rawRes, err := elastic.Request("GET", elastic.URL(model.Host, "/torture/file/_search"), hash{
+		"query": hash{
+			"bool": hash{
+				"must": []hash{
+					hash{
+						"term": hash{
+							"Filename": file.Filename,
+						},
+					},
+					hash{
+						"term": hash{
+							"Size": file.Size,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Println("find file error")
+		return
+	}
+
+	res, err := elastic.ParseResponse(rawRes)
+	if err != nil {
+		log.Printf("find file parse error %s\n", rawRes)
+		return
+	}
+
+	if res.Hits.Total > 0 {
+		entry := &res.Hits.Hits[0]
+
+		var updateRes []byte
+		updateRes, err = elastic.Request("POST", elastic.URL(model.Host, "/torture/file/"+entry.Id+"/_update"), hash{
+			"script": hash{
+				"source": "ctx._source.LastSeen = params.LastSeen; if(!ctx._source.Servers.contains(params.Server)) { ctx._source.Servers.add(params.Server) }",
+				"lang":   "painless",
+				"params": hash{
+					"LastSeen": time.Now(),
+					"Server": hash{
+						"Url":  file.Servers[0].Url,
+						"Path": file.Servers[0].Path,
+					},
+				},
+			},
+		})
+
+		if err != nil {
+			log.Printf("%s\n", updateRes)
+		}
+
+		return
+	}
+
+	// If the file entry does not already exist, create it
+	file.LastSeen = time.Now()
+	_, err = elastic.Request("POST", elastic.URL(model.Host, "/torture/file"), file)
+
+	return
+}
