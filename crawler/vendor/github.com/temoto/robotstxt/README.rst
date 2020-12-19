@@ -56,4 +56,57 @@ from HTTP response. It *does not* call `response.Body.Close()`::
     }
 
 * `FromStatusAndBytes(statusCode int, body []byte) (*RobotsData, error)` or
-`FromStatusAndString` if you prefer to read bytes (string) your
+`FromStatusAndString` if you prefer to read bytes (string) yourself.
+Passing status code applies following logic in line with Google's interpretation
+of robots.txt files:
+
+    * status 2xx  -> parse body with `FromBytes` and apply rules listed there.
+    * status 4xx  -> allow all (even 401/403, as recommended by Google).
+    * other (5xx) -> disallow all, consider this a temporary unavailability.
+
+2. Query
+^^^^^^^^
+
+Parsing robots.txt content builds a kind of logic database, which you can
+query with `(r *RobotsData) TestAgent(url, agent string) (bool)`.
+
+Explicit passing of agent is useful if you want to query for different agents. For
+single agent users there is an efficient option: `RobotsData.FindGroup(userAgent string)`
+returns a structure with `.Test(path string)` method and `.CrawlDelay time.Duration`.
+
+Simple query with explicit user agent. Each call will scan all rules.
+
+::
+
+    allow := robots.TestAgent("/", "FooBot")
+
+Or query several paths against same user agent for performance.
+
+::
+
+    group := robots.FindGroup("BarBot")
+    group.Test("/")
+    group.Test("/download.mp3")
+    group.Test("/news/article-2012-1")
+
+
+Who
+===
+
+Honorable contributors (in undefined order):
+
+    * Ilya Grigorik (igrigorik)
+    * Martin Angers (PuerkitoBio)
+    * Micha Gorelick (mynameisfiber)
+
+Initial commit and other: Sergey Shepelev temotor@gmail.com
+
+
+Flair
+=====
+
+.. image:: https://travis-ci.org/temoto/robotstxt.svg?branch=master
+    :target: https://travis-ci.org/temoto/robotstxt
+
+.. image:: https://codecov.io/gh/temoto/robotstxt/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/temoto/robotstxt
