@@ -2251,3 +2251,4 @@ var entity2 = map[string][2]rune{
 	"vsubne;":                  {'\u228A', '\uFE00'},
 	"vsupnE;":                  {'\u2ACC', '\uFE00'},
 	"vsupne;":                  {'\u228B', '\uFE00'},
+}
