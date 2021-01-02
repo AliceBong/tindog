@@ -88,4 +88,78 @@ func (n *Node) AppendChild(c *Node) {
 	} else {
 		n.FirstChild = c
 	}
-	n.LastChil
+	n.LastChild = c
+	c.Parent = n
+	c.PrevSibling = last
+}
+
+// RemoveChild removes a node c that is a child of n. Afterwards, c will have
+// no parent and no siblings.
+//
+// It will panic if c's parent is not n.
+func (n *Node) RemoveChild(c *Node) {
+	if c.Parent != n {
+		panic("html: RemoveChild called for a non-child Node")
+	}
+	if n.FirstChild == c {
+		n.FirstChild = c.NextSibling
+	}
+	if c.NextSibling != nil {
+		c.NextSibling.PrevSibling = c.PrevSibling
+	}
+	if n.LastChild == c {
+		n.LastChild = c.PrevSibling
+	}
+	if c.PrevSibling != nil {
+		c.PrevSibling.NextSibling = c.NextSibling
+	}
+	c.Parent = nil
+	c.PrevSibling = nil
+	c.NextSibling = nil
+}
+
+// reparentChildren reparents all of src's child nodes to dst.
+func reparentChildren(dst, src *Node) {
+	for {
+		child := src.FirstChild
+		if child == nil {
+			break
+		}
+		src.RemoveChild(child)
+		dst.AppendChild(child)
+	}
+}
+
+// clone returns a new node with the same type, data and attributes.
+// The clone has no parent, no siblings and no children.
+func (n *Node) clone() *Node {
+	m := &Node{
+		Type:     n.Type,
+		DataAtom: n.DataAtom,
+		Data:     n.Data,
+		Attr:     make([]Attribute, len(n.Attr)),
+	}
+	copy(m.Attr, n.Attr)
+	return m
+}
+
+// nodeStack is a stack of nodes.
+type nodeStack []*Node
+
+// pop pops the stack. It will panic if s is empty.
+func (s *nodeStack) pop() *Node {
+	i := len(*s)
+	n := (*s)[i-1]
+	*s = (*s)[:i-1]
+	return n
+}
+
+// top returns the most recently pushed node, or nil if s is empty.
+func (s *nodeStack) top() *Node {
+	if i := len(*s); i > 0 {
+		return (*s)[i-1]
+	}
+	return nil
+}
+
+// index returns the index of the top-mos
