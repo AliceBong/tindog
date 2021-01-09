@@ -258,4 +258,14 @@ var voidElements = map[string]bool{
 	"col":     true,
 	"command": true,
 	"embed":   true,
-	"hr":      
+	"hr":      true,
+	"img":     true,
+	"input":   true,
+	"keygen":  true,
+	"link":    true,
+	"meta":    true,
+	"param":   true,
+	"source":  true,
+	"track":   true,
+	"wbr":     true,
+}
