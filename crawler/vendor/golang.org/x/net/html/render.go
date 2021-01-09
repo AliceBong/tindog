@@ -126,4 +126,72 @@ func render1(w writer, n *Node) error {
 				}
 			} else if s != "" {
 				if _, err := w.WriteString(" SYSTEM "); err != nil {
-					return
+					return err
+				}
+				if err := writeQuoted(w, s); err != nil {
+					return err
+				}
+			}
+		}
+		return w.WriteByte('>')
+	default:
+		return errors.New("html: unknown node type")
+	}
+
+	// Render the <xxx> opening tag.
+	if err := w.WriteByte('<'); err != nil {
+		return err
+	}
+	if _, err := w.WriteString(n.Data); err != nil {
+		return err
+	}
+	for _, a := range n.Attr {
+		if err := w.WriteByte(' '); err != nil {
+			return err
+		}
+		if a.Namespace != "" {
+			if _, err := w.WriteString(a.Namespace); err != nil {
+				return err
+			}
+			if err := w.WriteByte(':'); err != nil {
+				return err
+			}
+		}
+		if _, err := w.WriteString(a.Key); err != nil {
+			return err
+		}
+		if _, err := w.WriteString(`="`); err != nil {
+			return err
+		}
+		if err := escape(w, a.Val); err != nil {
+			return err
+		}
+		if err := w.WriteByte('"'); err != nil {
+			return err
+		}
+	}
+	if voidElements[n.Data] {
+		if n.FirstChild != nil {
+			return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
+		}
+		_, err := w.WriteString("/>")
+		return err
+	}
+	if err := w.WriteByte('>'); err != nil {
+		return err
+	}
+
+	// Add initial newline where there is danger of a newline beging ignored.
+	if c := n.FirstChild; c != nil && c.Type == TextNode && strings.HasPrefix(c.Data, "\n") {
+		switch n.Data {
+		case "pre", "listing", "textarea":
+			if err := w.WriteByte('\n'); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Render any child nodes.
+	switch n.Data {
+	case "iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "xmp":
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
