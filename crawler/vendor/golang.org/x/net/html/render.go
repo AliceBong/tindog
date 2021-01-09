@@ -195,3 +195,67 @@ func render1(w writer, n *Node) error {
 	switch n.Data {
 	case "iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "xmp":
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if c.Type == TextNode {
+				if _, err := w.WriteString(c.Data); err != nil {
+					return err
+				}
+			} else {
+				if err := render1(w, c); err != nil {
+					return err
+				}
+			}
+		}
+		if n.Data == "plaintext" {
+			// Don't render anything else. <plaintext> must be the
+			// last element in the file, with no closing tag.
+			return plaintextAbort
+		}
+	default:
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if err := render1(w, c); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Render the </xxx> closing tag.
+	if _, err := w.WriteString("</"); err != nil {
+		return err
+	}
+	if _, err := w.WriteString(n.Data); err != nil {
+		return err
+	}
+	return w.WriteByte('>')
+}
+
+// writeQuoted writes s to w surrounded by quotes. Normally it will use double
+// quotes, but if s contains a double quote, it will use single quotes.
+// It is used for writing the identifiers in a doctype declaration.
+// In valid HTML, they can't contain both types of quotes.
+func writeQuoted(w writer, s string) error {
+	var q byte = '"'
+	if strings.Contains(s, `"`) {
+		q = '\''
+	}
+	if err := w.WriteByte(q); err != nil {
+		return err
+	}
+	if _, err := w.WriteString(s); err != nil {
+		return err
+	}
+	if err := w.WriteByte(q); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Section 12.1.2, "Elements", gives this list of void elements. Void elements
+// are those that can't have any contents.
+var voidElements = map[string]bool{
+	"area":    true,
+	"base":    true,
+	"br":      true,
+	"col":     true,
+	"command": true,
+	"embed":   true,
+	"hr":      
