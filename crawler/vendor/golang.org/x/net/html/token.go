@@ -117,4 +117,39 @@ func (t Token) String() string {
 	return "Invalid(" + strconv.Itoa(int(t.Type)) + ")"
 }
 
-// span is a range of bytes in a Tokenizer's buffer. 
+// span is a range of bytes in a Tokenizer's buffer. The start is inclusive,
+// the end is exclusive.
+type span struct {
+	start, end int
+}
+
+// A Tokenizer returns a stream of HTML Tokens.
+type Tokenizer struct {
+	// r is the source of the HTML text.
+	r io.Reader
+	// tt is the TokenType of the current token.
+	tt TokenType
+	// err is the first error encountered during tokenization. It is possible
+	// for tt != Error && err != nil to hold: this means that Next returned a
+	// valid token but the subsequent Next call will return an error token.
+	// For example, if the HTML text input was just "plain", then the first
+	// Next call would set z.err to io.EOF but return a TextToken, and all
+	// subsequent Next calls would return an ErrorToken.
+	// err is never reset. Once it becomes non-nil, it stays non-nil.
+	err error
+	// readErr is the error returned by the io.Reader r. It is separate from
+	// err because it is valid for an io.Reader to return (n int, err1 error)
+	// such that n > 0 && err1 != nil, and callers should always process the
+	// n > 0 bytes before considering the error err1.
+	readErr error
+	// buf[raw.start:raw.end] holds the raw bytes of the current token.
+	// buf[raw.end:] is buffered input that will yield future tokens.
+	raw span
+	buf []byte
+	// maxBuf limits the data buffered in buf. A value of 0 means unlimited.
+	maxBuf int
+	// buf[data.start:data.end] holds the raw bytes of the current token's data:
+	// a text token's text, a tag token's tag name, etc.
+	data span
+	// pendingAttr is the attribute key and value currently being tokenized.
+	// When complete, pendingAttr
