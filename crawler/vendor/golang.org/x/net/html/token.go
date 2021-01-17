@@ -152,4 +152,35 @@ type Tokenizer struct {
 	// a text token's text, a tag token's tag name, etc.
 	data span
 	// pendingAttr is the attribute key and value currently being tokenized.
-	// When complete, pendingAttr
+	// When complete, pendingAttr is pushed onto attr. nAttrReturned is
+	// incremented on each call to TagAttr.
+	pendingAttr   [2]span
+	attr          [][2]span
+	nAttrReturned int
+	// rawTag is the "script" in "</script>" that closes the next token. If
+	// non-empty, the subsequent call to Next will return a raw or RCDATA text
+	// token: one that treats "<p>" as text instead of an element.
+	// rawTag's contents are lower-cased.
+	rawTag string
+	// textIsRaw is whether the current text token's data is not escaped.
+	textIsRaw bool
+	// convertNUL is whether NUL bytes in the current token's data should
+	// be converted into \ufffd replacement characters.
+	convertNUL bool
+	// allowCDATA is whether CDATA sections are allowed in the current context.
+	allowCDATA bool
+}
+
+// AllowCDATA sets whether or not the tokenizer recognizes <![CDATA[foo]]> as
+// the text "foo". The default value is false, which means to recognize it as
+// a bogus comment "<!-- [CDATA[foo]] -->" instead.
+//
+// Strictly speaking, an HTML5 compliant tokenizer should allow CDATA if and
+// only if tokenizing foreign content, such as MathML and SVG. However,
+// tracking foreign-contentness is difficult to do purely in the tokenizer,
+// as opposed to the parser, due to HTML integration points: an <svg> element
+// can contain a <foreignObject> that is foreign-to-SVG but not foreign-to-
+// HTML. For strict compliance with the HTML5 tokenization algorithm, it is the
+// responsibility of the user of a tokenizer to call AllowCDATA as appropriate.
+// In practice, if using the tokenizer without caring whether MathML or SVG
+// CDATA is text or comments
