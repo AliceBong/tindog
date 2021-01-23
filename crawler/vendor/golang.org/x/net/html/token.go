@@ -254,4 +254,74 @@ func (z *Tokenizer) readByte() byte {
 		if x := z.raw.start; x != 0 {
 			// Adjust the data/attr spans to refer to the same contents after the copy.
 			z.data.start -= x
-			z.data.
+			z.data.end -= x
+			z.pendingAttr[0].start -= x
+			z.pendingAttr[0].end -= x
+			z.pendingAttr[1].start -= x
+			z.pendingAttr[1].end -= x
+			for i := range z.attr {
+				z.attr[i][0].start -= x
+				z.attr[i][0].end -= x
+				z.attr[i][1].start -= x
+				z.attr[i][1].end -= x
+			}
+		}
+		z.raw.start, z.raw.end, z.buf = 0, d, buf1[:d]
+		// Now that we have copied the live bytes to the start of the buffer,
+		// we read from z.r into the remainder.
+		var n int
+		n, z.readErr = readAtLeastOneByte(z.r, buf1[d:cap(buf1)])
+		if n == 0 {
+			z.err = z.readErr
+			return 0
+		}
+		z.buf = buf1[:d+n]
+	}
+	x := z.buf[z.raw.end]
+	z.raw.end++
+	if z.maxBuf > 0 && z.raw.end-z.raw.start >= z.maxBuf {
+		z.err = ErrBufferExceeded
+		return 0
+	}
+	return x
+}
+
+// Buffered returns a slice containing data buffered but not yet tokenized.
+func (z *Tokenizer) Buffered() []byte {
+	return z.buf[z.raw.end:]
+}
+
+// readAtLeastOneByte wraps an io.Reader so that reading cannot return (0, nil).
+// It returns io.ErrNoProgress if the underlying r.Read method returns (0, nil)
+// too many times in succession.
+func readAtLeastOneByte(r io.Reader, b []byte) (int, error) {
+	for i := 0; i < 100; i++ {
+		n, err := r.Read(b)
+		if n != 0 || err != nil {
+			return n, err
+		}
+	}
+	return 0, io.ErrNoProgress
+}
+
+// skipWhiteSpace skips past any white space.
+func (z *Tokenizer) skipWhiteSpace() {
+	if z.err != nil {
+		return
+	}
+	for {
+		c := z.readByte()
+		if z.err != nil {
+			return
+		}
+		switch c {
+		case ' ', '\n', '\r', '\t', '\f':
+			// No-op.
+		default:
+			z.raw.end--
+			return
+		}
+	}
+}
+
+// readRawOrRCDATA reads until the next "</foo>
