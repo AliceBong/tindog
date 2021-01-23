@@ -183,4 +183,28 @@ type Tokenizer struct {
 // HTML. For strict compliance with the HTML5 tokenization algorithm, it is the
 // responsibility of the user of a tokenizer to call AllowCDATA as appropriate.
 // In practice, if using the tokenizer without caring whether MathML or SVG
-// CDATA is text or comments
+// CDATA is text or comments, such as tokenizing HTML to find all the anchor
+// text, it is acceptable to ignore this responsibility.
+func (z *Tokenizer) AllowCDATA(allowCDATA bool) {
+	z.allowCDATA = allowCDATA
+}
+
+// NextIsNotRawText instructs the tokenizer that the next token should not be
+// considered as 'raw text'. Some elements, such as script and title elements,
+// normally require the next token after the opening tag to be 'raw text' that
+// has no child elements. For example, tokenizing "<title>a<b>c</b>d</title>"
+// yields a start tag token for "<title>", a text token for "a<b>c</b>d", and
+// an end tag token for "</title>". There are no distinct start tag or end tag
+// tokens for the "<b>" and "</b>".
+//
+// This tokenizer implementation will generally look for raw text at the right
+// times. Strictly speaking, an HTML5 compliant tokenizer should not look for
+// raw text if in foreign content: <title> generally needs raw text, but a
+// <title> inside an <svg> does not. Another example is that a <textarea>
+// generally needs raw text, but a <textarea> is not allowed as an immediate
+// child of a <select>; in normal parsing, a <textarea> implies </select>, but
+// one cannot close the implicit element when parsing a <select>'s InnerHTML.
+// Similarly to AllowCDATA, tracking the correct moment to override raw-text-
+// ness is difficult to do purely in the tokenizer, as opposed to the parser.
+// For strict compliance with the HTML5 tokenization algorithm, it is the
+// responsibility of the user of a tokenizer to call NextIsNotRawT
