@@ -207,4 +207,51 @@ func (z *Tokenizer) AllowCDATA(allowCDATA bool) {
 // Similarly to AllowCDATA, tracking the correct moment to override raw-text-
 // ness is difficult to do purely in the tokenizer, as opposed to the parser.
 // For strict compliance with the HTML5 tokenization algorithm, it is the
-// responsibility of the user of a tokenizer to call NextIsNotRawT
+// responsibility of the user of a tokenizer to call NextIsNotRawText as
+// appropriate. In practice, like AllowCDATA, it is acceptable to ignore this
+// responsibility for basic usage.
+//
+// Note that this 'raw text' concept is different from the one offered by the
+// Tokenizer.Raw method.
+func (z *Tokenizer) NextIsNotRawText() {
+	z.rawTag = ""
+}
+
+// Err returns the error associated with the most recent ErrorToken token.
+// This is typically io.EOF, meaning the end of tokenization.
+func (z *Tokenizer) Err() error {
+	if z.tt != ErrorToken {
+		return nil
+	}
+	return z.err
+}
+
+// readByte returns the next byte from the input stream, doing a buffered read
+// from z.r into z.buf if necessary. z.buf[z.raw.start:z.raw.end] remains a contiguous byte
+// slice that holds all the bytes read so far for the current token.
+// It sets z.err if the underlying reader returns an error.
+// Pre-condition: z.err == nil.
+func (z *Tokenizer) readByte() byte {
+	if z.raw.end >= len(z.buf) {
+		// Our buffer is exhausted and we have to read from z.r. Check if the
+		// previous read resulted in an error.
+		if z.readErr != nil {
+			z.err = z.readErr
+			return 0
+		}
+		// We copy z.buf[z.raw.start:z.raw.end] to the beginning of z.buf. If the length
+		// z.raw.end - z.raw.start is more than half the capacity of z.buf, then we
+		// allocate a new buffer before the copy.
+		c := cap(z.buf)
+		d := z.raw.end - z.raw.start
+		var buf1 []byte
+		if 2*d > c {
+			buf1 = make([]byte, d, 2*c)
+		} else {
+			buf1 = z.buf[:d]
+		}
+		copy(buf1, z.buf[z.raw.start:z.raw.end])
+		if x := z.raw.start; x != 0 {
+			// Adjust the data/attr spans to refer to the same contents after the copy.
+			z.data.start -= x
+			z.data.
