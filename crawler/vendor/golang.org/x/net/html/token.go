@@ -324,4 +324,69 @@ func (z *Tokenizer) skipWhiteSpace() {
 	}
 }
 
-// readRawOrRCDATA reads until the next "</foo>
+// readRawOrRCDATA reads until the next "</foo>", where "foo" is z.rawTag and
+// is typically something like "script" or "textarea".
+func (z *Tokenizer) readRawOrRCDATA() {
+	if z.rawTag == "script" {
+		z.readScript()
+		z.textIsRaw = true
+		z.rawTag = ""
+		return
+	}
+loop:
+	for {
+		c := z.readByte()
+		if z.err != nil {
+			break loop
+		}
+		if c != '<' {
+			continue loop
+		}
+		c = z.readByte()
+		if z.err != nil {
+			break loop
+		}
+		if c != '/' {
+			continue loop
+		}
+		if z.readRawEndTag() || z.err != nil {
+			break loop
+		}
+	}
+	z.data.end = z.raw.end
+	// A textarea's or title's RCDATA can contain escaped entities.
+	z.textIsRaw = z.rawTag != "textarea" && z.rawTag != "title"
+	z.rawTag = ""
+}
+
+// readRawEndTag attempts to read a tag like "</foo>", where "foo" is z.rawTag.
+// If it succeeds, it backs up the input position to reconsume the tag and
+// returns true. Otherwise it returns false. The opening "</" has already been
+// consumed.
+func (z *Tokenizer) readRawEndTag() bool {
+	for i := 0; i < len(z.rawTag); i++ {
+		c := z.readByte()
+		if z.err != nil {
+			return false
+		}
+		if c != z.rawTag[i] && c != z.rawTag[i]-('a'-'A') {
+			z.raw.end--
+			return false
+		}
+	}
+	c := z.readByte()
+	if z.err != nil {
+		return false
+	}
+	switch c {
+	case ' ', '\n', '\r', '\t', '\f', '/', '>':
+		// The 3 is 2 for the leading "</" plus 1 for the trailing character c.
+		z.raw.end -= 3 + len(z.rawTag)
+		return true
+	}
+	z.raw.end--
+	return false
+}
+
+// readScript reads until the next </script> tag, following the byzantine
+// rules for escaping/hiding the closing ta
