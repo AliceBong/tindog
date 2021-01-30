@@ -389,4 +389,108 @@ func (z *Tokenizer) readRawEndTag() bool {
 }
 
 // readScript reads until the next </script> tag, following the byzantine
-// rules for escaping/hiding the closing ta
+// rules for escaping/hiding the closing tag.
+func (z *Tokenizer) readScript() {
+	defer func() {
+		z.data.end = z.raw.end
+	}()
+	var c byte
+
+scriptData:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	if c == '<' {
+		goto scriptDataLessThanSign
+	}
+	goto scriptData
+
+scriptDataLessThanSign:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case '/':
+		goto scriptDataEndTagOpen
+	case '!':
+		goto scriptDataEscapeStart
+	}
+	z.raw.end--
+	goto scriptData
+
+scriptDataEndTagOpen:
+	if z.readRawEndTag() || z.err != nil {
+		return
+	}
+	goto scriptData
+
+scriptDataEscapeStart:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	if c == '-' {
+		goto scriptDataEscapeStartDash
+	}
+	z.raw.end--
+	goto scriptData
+
+scriptDataEscapeStartDash:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	if c == '-' {
+		goto scriptDataEscapedDashDash
+	}
+	z.raw.end--
+	goto scriptData
+
+scriptDataEscaped:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case '-':
+		goto scriptDataEscapedDash
+	case '<':
+		goto scriptDataEscapedLessThanSign
+	}
+	goto scriptDataEscaped
+
+scriptDataEscapedDash:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case '-':
+		goto scriptDataEscapedDashDash
+	case '<':
+		goto scriptDataEscapedLessThanSign
+	}
+	goto scriptDataEscaped
+
+scriptDataEscapedDashDash:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case '-':
+		goto scriptDataEscapedDashDash
+	case '<':
+		goto scriptDataEscapedLessThanSign
+	case '>':
+		goto scriptData
+	}
+	goto scriptDataEscaped
+
+scriptDataEscapedLessThanSign:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	
