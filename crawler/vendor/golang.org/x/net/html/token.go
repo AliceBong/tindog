@@ -493,4 +493,90 @@ scriptDataEscapedLessThanSign:
 	c = z.readByte()
 	if z.err != nil {
 		return
-	
+	}
+	if c == '/' {
+		goto scriptDataEscapedEndTagOpen
+	}
+	if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' {
+		goto scriptDataDoubleEscapeStart
+	}
+	z.raw.end--
+	goto scriptData
+
+scriptDataEscapedEndTagOpen:
+	if z.readRawEndTag() || z.err != nil {
+		return
+	}
+	goto scriptDataEscaped
+
+scriptDataDoubleEscapeStart:
+	z.raw.end--
+	for i := 0; i < len("script"); i++ {
+		c = z.readByte()
+		if z.err != nil {
+			return
+		}
+		if c != "script"[i] && c != "SCRIPT"[i] {
+			z.raw.end--
+			goto scriptDataEscaped
+		}
+	}
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case ' ', '\n', '\r', '\t', '\f', '/', '>':
+		goto scriptDataDoubleEscaped
+	}
+	z.raw.end--
+	goto scriptDataEscaped
+
+scriptDataDoubleEscaped:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case '-':
+		goto scriptDataDoubleEscapedDash
+	case '<':
+		goto scriptDataDoubleEscapedLessThanSign
+	}
+	goto scriptDataDoubleEscaped
+
+scriptDataDoubleEscapedDash:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case '-':
+		goto scriptDataDoubleEscapedDashDash
+	case '<':
+		goto scriptDataDoubleEscapedLessThanSign
+	}
+	goto scriptDataDoubleEscaped
+
+scriptDataDoubleEscapedDashDash:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch c {
+	case '-':
+		goto scriptDataDoubleEscapedDashDash
+	case '<':
+		goto scriptDataDoubleEscapedLessThanSign
+	case '>':
+		goto scriptData
+	}
+	goto scriptDataDoubleEscaped
+
+scriptDataDoubleEscapedLessThanSign:
+	c = z.readByte()
+	if z.err != nil {
+		return
+	}
+	if c == '/' {
+		goto s
