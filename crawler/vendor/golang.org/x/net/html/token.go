@@ -803,4 +803,66 @@ func (z *Tokenizer) readStartTag() TokenType {
 		z.rawTag = strings.ToLower(string(z.buf[z.data.start:z.data.end]))
 	}
 	// Look for a self-closing token like "<br/>".
-	if z.err == nil && z.bu
+	if z.err == nil && z.buf[z.raw.end-2] == '/' {
+		return SelfClosingTagToken
+	}
+	return StartTagToken
+}
+
+// readTag reads the next tag token and its attributes. If saveAttr, those
+// attributes are saved in z.attr, otherwise z.attr is set to an empty slice.
+// The opening "<a" or "</a" has already been consumed, where 'a' means anything
+// in [A-Za-z].
+func (z *Tokenizer) readTag(saveAttr bool) {
+	z.attr = z.attr[:0]
+	z.nAttrReturned = 0
+	// Read the tag name and attribute key/value pairs.
+	z.readTagName()
+	if z.skipWhiteSpace(); z.err != nil {
+		return
+	}
+	for {
+		c := z.readByte()
+		if z.err != nil || c == '>' {
+			break
+		}
+		z.raw.end--
+		z.readTagAttrKey()
+		z.readTagAttrVal()
+		// Save pendingAttr if saveAttr and that attribute has a non-empty key.
+		if saveAttr && z.pendingAttr[0].start != z.pendingAttr[0].end {
+			z.attr = append(z.attr, z.pendingAttr)
+		}
+		if z.skipWhiteSpace(); z.err != nil {
+			break
+		}
+	}
+}
+
+// readTagName sets z.data to the "div" in "<div k=v>". The reader (z.raw.end)
+// is positioned such that the first byte of the tag name (the "d" in "<div")
+// has already been consumed.
+func (z *Tokenizer) readTagName() {
+	z.data.start = z.raw.end - 1
+	for {
+		c := z.readByte()
+		if z.err != nil {
+			z.data.end = z.raw.end
+			return
+		}
+		switch c {
+		case ' ', '\n', '\r', '\t', '\f':
+			z.data.end = z.raw.end - 1
+			return
+		case '/', '>':
+			z.raw.end--
+			z.data.end = z.raw.end
+			return
+		}
+	}
+}
+
+// readTagAttrKey sets z.pendingAttr[0] to the "k" in "<div k=v>".
+// Precondition: z.err == nil.
+func (z *Tokenizer) readTagAttrKey() {
+	z.pendingAttr[0].start = z.r
