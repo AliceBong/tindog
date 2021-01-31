@@ -660,4 +660,72 @@ func (z *Tokenizer) readUntilCloseAngle() {
 // readMarkupDeclaration reads the next token starting with "<!". It might be
 // a "<!--comment-->", a "<!DOCTYPE foo>", a "<![CDATA[section]]>" or
 // "<!a bogus comment". The opening "<!" has already been consumed.
-fu
+func (z *Tokenizer) readMarkupDeclaration() TokenType {
+	z.data.start = z.raw.end
+	var c [2]byte
+	for i := 0; i < 2; i++ {
+		c[i] = z.readByte()
+		if z.err != nil {
+			z.data.end = z.raw.end
+			return CommentToken
+		}
+	}
+	if c[0] == '-' && c[1] == '-' {
+		z.readComment()
+		return CommentToken
+	}
+	z.raw.end -= 2
+	if z.readDoctype() {
+		return DoctypeToken
+	}
+	if z.allowCDATA && z.readCDATA() {
+		z.convertNUL = true
+		return TextToken
+	}
+	// It's a bogus comment.
+	z.readUntilCloseAngle()
+	return CommentToken
+}
+
+// readDoctype attempts to read a doctype declaration and returns true if
+// successful. The opening "<!" has already been consumed.
+func (z *Tokenizer) readDoctype() bool {
+	const s = "DOCTYPE"
+	for i := 0; i < len(s); i++ {
+		c := z.readByte()
+		if z.err != nil {
+			z.data.end = z.raw.end
+			return false
+		}
+		if c != s[i] && c != s[i]+('a'-'A') {
+			// Back up to read the fragment of "DOCTYPE" again.
+			z.raw.end = z.data.start
+			return false
+		}
+	}
+	if z.skipWhiteSpace(); z.err != nil {
+		z.data.start = z.raw.end
+		z.data.end = z.raw.end
+		return true
+	}
+	z.readUntilCloseAngle()
+	return true
+}
+
+// readCDATA attempts to read a CDATA section and returns true if
+// successful. The opening "<!" has already been consumed.
+func (z *Tokenizer) readCDATA() bool {
+	const s = "[CDATA["
+	for i := 0; i < len(s); i++ {
+		c := z.readByte()
+		if z.err != nil {
+			z.data.end = z.raw.end
+			return false
+		}
+		if c != s[i] {
+			// Back up to read the fragment of "[CDATA[" again.
+			z.raw.end = z.data.start
+			return false
+		}
+	}
+	z.data.start =
