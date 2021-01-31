@@ -579,4 +579,85 @@ scriptDataDoubleEscapedLessThanSign:
 		return
 	}
 	if c == '/' {
-		goto s
+		goto scriptDataDoubleEscapeEnd
+	}
+	z.raw.end--
+	goto scriptDataDoubleEscaped
+
+scriptDataDoubleEscapeEnd:
+	if z.readRawEndTag() {
+		z.raw.end += len("</script>")
+		goto scriptDataEscaped
+	}
+	if z.err != nil {
+		return
+	}
+	goto scriptDataDoubleEscaped
+}
+
+// readComment reads the next comment token starting with "<!--". The opening
+// "<!--" has already been consumed.
+func (z *Tokenizer) readComment() {
+	z.data.start = z.raw.end
+	defer func() {
+		if z.data.end < z.data.start {
+			// It's a comment with no data, like <!-->.
+			z.data.end = z.data.start
+		}
+	}()
+	for dashCount := 2; ; {
+		c := z.readByte()
+		if z.err != nil {
+			// Ignore up to two dashes at EOF.
+			if dashCount > 2 {
+				dashCount = 2
+			}
+			z.data.end = z.raw.end - dashCount
+			return
+		}
+		switch c {
+		case '-':
+			dashCount++
+			continue
+		case '>':
+			if dashCount >= 2 {
+				z.data.end = z.raw.end - len("-->")
+				return
+			}
+		case '!':
+			if dashCount >= 2 {
+				c = z.readByte()
+				if z.err != nil {
+					z.data.end = z.raw.end
+					return
+				}
+				if c == '>' {
+					z.data.end = z.raw.end - len("--!>")
+					return
+				}
+			}
+		}
+		dashCount = 0
+	}
+}
+
+// readUntilCloseAngle reads until the next ">".
+func (z *Tokenizer) readUntilCloseAngle() {
+	z.data.start = z.raw.end
+	for {
+		c := z.readByte()
+		if z.err != nil {
+			z.data.end = z.raw.end
+			return
+		}
+		if c == '>' {
+			z.data.end = z.raw.end - len(">")
+			return
+		}
+	}
+}
+
+// readMarkupDeclaration reads the next token starting with "<!". It might be
+// a "<!--comment-->", a "<!DOCTYPE foo>", a "<![CDATA[section]]>" or
+// "<!a bogus comment". The opening "<!" has already been consumed.
+fu
