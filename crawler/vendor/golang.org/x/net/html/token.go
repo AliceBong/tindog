@@ -865,4 +865,95 @@ func (z *Tokenizer) readTagName() {
 // readTagAttrKey sets z.pendingAttr[0] to the "k" in "<div k=v>".
 // Precondition: z.err == nil.
 func (z *Tokenizer) readTagAttrKey() {
-	z.pendingAttr[0].start = z.r
+	z.pendingAttr[0].start = z.raw.end
+	for {
+		c := z.readByte()
+		if z.err != nil {
+			z.pendingAttr[0].end = z.raw.end
+			return
+		}
+		switch c {
+		case ' ', '\n', '\r', '\t', '\f', '/':
+			z.pendingAttr[0].end = z.raw.end - 1
+			return
+		case '=', '>':
+			z.raw.end--
+			z.pendingAttr[0].end = z.raw.end
+			return
+		}
+	}
+}
+
+// readTagAttrVal sets z.pendingAttr[1] to the "v" in "<div k=v>".
+func (z *Tokenizer) readTagAttrVal() {
+	z.pendingAttr[1].start = z.raw.end
+	z.pendingAttr[1].end = z.raw.end
+	if z.skipWhiteSpace(); z.err != nil {
+		return
+	}
+	c := z.readByte()
+	if z.err != nil {
+		return
+	}
+	if c != '=' {
+		z.raw.end--
+		return
+	}
+	if z.skipWhiteSpace(); z.err != nil {
+		return
+	}
+	quote := z.readByte()
+	if z.err != nil {
+		return
+	}
+	switch quote {
+	case '>':
+		z.raw.end--
+		return
+
+	case '\'', '"':
+		z.pendingAttr[1].start = z.raw.end
+		for {
+			c := z.readByte()
+			if z.err != nil {
+				z.pendingAttr[1].end = z.raw.end
+				return
+			}
+			if c == quote {
+				z.pendingAttr[1].end = z.raw.end - 1
+				return
+			}
+		}
+
+	default:
+		z.pendingAttr[1].start = z.raw.end - 1
+		for {
+			c := z.readByte()
+			if z.err != nil {
+				z.pendingAttr[1].end = z.raw.end
+				return
+			}
+			switch c {
+			case ' ', '\n', '\r', '\t', '\f':
+				z.pendingAttr[1].end = z.raw.end - 1
+				return
+			case '>':
+				z.raw.end--
+				z.pendingAttr[1].end = z.raw.end
+				return
+			}
+		}
+	}
+}
+
+// Next scans the next token and returns its type.
+func (z *Tokenizer) Next() TokenType {
+	z.raw.start = z.raw.end
+	z.data.start = z.raw.end
+	z.data.end = z.raw.end
+	if z.err != nil {
+		z.tt = ErrorToken
+		return z.tt
+	}
+	if z.rawTag != "" {
+		if 
