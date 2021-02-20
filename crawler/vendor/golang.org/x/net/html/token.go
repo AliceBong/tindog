@@ -1026,4 +1026,83 @@ loop:
 				break loop
 			}
 			if c == '>' {
-				// "</>" does not generate a token at all. G
+				// "</>" does not generate a token at all. Generate an empty comment
+				// to allow passthrough clients to pick up the data using Raw.
+				// Reset the tokenizer state and start again.
+				z.tt = CommentToken
+				return z.tt
+			}
+			if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' {
+				z.readTag(false)
+				if z.err != nil {
+					z.tt = ErrorToken
+				} else {
+					z.tt = EndTagToken
+				}
+				return z.tt
+			}
+			z.raw.end--
+			z.readUntilCloseAngle()
+			z.tt = CommentToken
+			return z.tt
+		case CommentToken:
+			if c == '!' {
+				z.tt = z.readMarkupDeclaration()
+				return z.tt
+			}
+			z.raw.end--
+			z.readUntilCloseAngle()
+			z.tt = CommentToken
+			return z.tt
+		}
+	}
+	if z.raw.start < z.raw.end {
+		z.data.end = z.raw.end
+		z.tt = TextToken
+		return z.tt
+	}
+	z.tt = ErrorToken
+	return z.tt
+}
+
+// Raw returns the unmodified text of the current token. Calling Next, Token,
+// Text, TagName or TagAttr may change the contents of the returned slice.
+func (z *Tokenizer) Raw() []byte {
+	return z.buf[z.raw.start:z.raw.end]
+}
+
+// convertNewlines converts "\r" and "\r\n" in s to "\n".
+// The conversion happens in place, but the resulting slice may be shorter.
+func convertNewlines(s []byte) []byte {
+	for i, c := range s {
+		if c != '\r' {
+			continue
+		}
+
+		src := i + 1
+		if src >= len(s) || s[src] != '\n' {
+			s[i] = '\n'
+			continue
+		}
+
+		dst := i
+		for src < len(s) {
+			if s[src] == '\r' {
+				if src+1 < len(s) && s[src+1] == '\n' {
+					src++
+				}
+				s[dst] = '\n'
+			} else {
+				s[dst] = s[src]
+			}
+			src++
+			dst++
+		}
+		return s[:dst]
+	}
+	return s
+}
+
+var (
+	nul         = []byte("\x00")
+	repl
