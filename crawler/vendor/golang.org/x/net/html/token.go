@@ -956,4 +956,74 @@ func (z *Tokenizer) Next() TokenType {
 		return z.tt
 	}
 	if z.rawTag != "" {
-		if 
+		if z.rawTag == "plaintext" {
+			// Read everything up to EOF.
+			for z.err == nil {
+				z.readByte()
+			}
+			z.data.end = z.raw.end
+			z.textIsRaw = true
+		} else {
+			z.readRawOrRCDATA()
+		}
+		if z.data.end > z.data.start {
+			z.tt = TextToken
+			z.convertNUL = true
+			return z.tt
+		}
+	}
+	z.textIsRaw = false
+	z.convertNUL = false
+
+loop:
+	for {
+		c := z.readByte()
+		if z.err != nil {
+			break loop
+		}
+		if c != '<' {
+			continue loop
+		}
+
+		// Check if the '<' we have just read is part of a tag, comment
+		// or doctype. If not, it's part of the accumulated text token.
+		c = z.readByte()
+		if z.err != nil {
+			break loop
+		}
+		var tokenType TokenType
+		switch {
+		case 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z':
+			tokenType = StartTagToken
+		case c == '/':
+			tokenType = EndTagToken
+		case c == '!' || c == '?':
+			// We use CommentToken to mean any of "<!--actual comments-->",
+			// "<!DOCTYPE declarations>" and "<?xml processing instructions?>".
+			tokenType = CommentToken
+		default:
+			// Reconsume the current character.
+			z.raw.end--
+			continue
+		}
+
+		// We have a non-text token, but we might have accumulated some text
+		// before that. If so, we return the text first, and return the non-
+		// text token on the subsequent call to Next.
+		if x := z.raw.end - len("<a"); z.raw.start < x {
+			z.raw.end = x
+			z.data.end = x
+			z.tt = TextToken
+			return z.tt
+		}
+		switch tokenType {
+		case StartTagToken:
+			z.tt = z.readStartTag()
+			return z.tt
+		case EndTagToken:
+			c = z.readByte()
+			if z.err != nil {
+				break loop
+			}
+			if c == '>' {
+				// "</>" does not generate a token at all. G
