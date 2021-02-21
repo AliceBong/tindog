@@ -1150,4 +1150,58 @@ func (z *Tokenizer) TagName() (name []byte, hasAttr bool) {
 func (z *Tokenizer) TagAttr() (key, val []byte, moreAttr bool) {
 	if z.nAttrReturned < len(z.attr) {
 		switch z.tt {
-		case StartTagToken, SelfClosing
+		case StartTagToken, SelfClosingTagToken:
+			x := z.attr[z.nAttrReturned]
+			z.nAttrReturned++
+			key = z.buf[x[0].start:x[0].end]
+			val = z.buf[x[1].start:x[1].end]
+			return lower(key), unescape(convertNewlines(val), true), z.nAttrReturned < len(z.attr)
+		}
+	}
+	return nil, nil, false
+}
+
+// Token returns the next Token. The result's Data and Attr values remain valid
+// after subsequent Next calls.
+func (z *Tokenizer) Token() Token {
+	t := Token{Type: z.tt}
+	switch z.tt {
+	case TextToken, CommentToken, DoctypeToken:
+		t.Data = string(z.Text())
+	case StartTagToken, SelfClosingTagToken, EndTagToken:
+		name, moreAttr := z.TagName()
+		for moreAttr {
+			var key, val []byte
+			key, val, moreAttr = z.TagAttr()
+			t.Attr = append(t.Attr, Attribute{"", atom.String(key), string(val)})
+		}
+		if a := atom.Lookup(name); a != 0 {
+			t.DataAtom, t.Data = a, a.String()
+		} else {
+			t.DataAtom, t.Data = 0, string(name)
+		}
+	}
+	return t
+}
+
+// SetMaxBuf sets a limit on the amount of data buffered during tokenization.
+// A value of 0 means unlimited.
+func (z *Tokenizer) SetMaxBuf(n int) {
+	z.maxBuf = n
+}
+
+// NewTokenizer returns a new HTML Tokenizer for the given Reader.
+// The input is assumed to be UTF-8 encoded.
+func NewTokenizer(r io.Reader) *Tokenizer {
+	return NewTokenizerFragment(r, "")
+}
+
+// NewTokenizerFragment returns a new HTML Tokenizer for the given Reader, for
+// tokenizing an existing element's InnerHTML fragment. contextTag is that
+// element's tag, such as "div" or "iframe".
+//
+// For example, how the InnerHTML "a<b" is tokenized depends on whether it is
+// for a <p> tag or a <script> tag.
+//
+// The input is assumed to be UTF-8 encoded.
+func NewTokenizerFragment(r io.Reader, conte
