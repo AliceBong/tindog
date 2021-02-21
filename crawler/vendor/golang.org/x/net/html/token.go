@@ -1105,4 +1105,49 @@ func convertNewlines(s []byte) []byte {
 
 var (
 	nul         = []byte("\x00")
-	repl
+	replacement = []byte("\ufffd")
+)
+
+// Text returns the unescaped text of a text, comment or doctype token. The
+// contents of the returned slice may change on the next call to Next.
+func (z *Tokenizer) Text() []byte {
+	switch z.tt {
+	case TextToken, CommentToken, DoctypeToken:
+		s := z.buf[z.data.start:z.data.end]
+		z.data.start = z.raw.end
+		z.data.end = z.raw.end
+		s = convertNewlines(s)
+		if (z.convertNUL || z.tt == CommentToken) && bytes.Contains(s, nul) {
+			s = bytes.Replace(s, nul, replacement, -1)
+		}
+		if !z.textIsRaw {
+			s = unescape(s, false)
+		}
+		return s
+	}
+	return nil
+}
+
+// TagName returns the lower-cased name of a tag token (the `img` out of
+// `<IMG SRC="foo">`) and whether the tag has attributes.
+// The contents of the returned slice may change on the next call to Next.
+func (z *Tokenizer) TagName() (name []byte, hasAttr bool) {
+	if z.data.start < z.data.end {
+		switch z.tt {
+		case StartTagToken, EndTagToken, SelfClosingTagToken:
+			s := z.buf[z.data.start:z.data.end]
+			z.data.start = z.raw.end
+			z.data.end = z.raw.end
+			return lower(s), z.nAttrReturned < len(z.attr)
+		}
+	}
+	return nil, false
+}
+
+// TagAttr returns the lower-cased key and unescaped value of the next unparsed
+// attribute for the current tag token and whether there are more attributes.
+// The contents of the returned slices may change on the next call to Next.
+func (z *Tokenizer) TagAttr() (key, val []byte, moreAttr bool) {
+	if z.nAttrReturned < len(z.attr) {
+		switch z.tt {
+		case StartTagToken, SelfClosing
