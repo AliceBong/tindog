@@ -1204,4 +1204,16 @@ func NewTokenizer(r io.Reader) *Tokenizer {
 // for a <p> tag or a <script> tag.
 //
 // The input is assumed to be UTF-8 encoded.
-func NewTokenizerFragment(r io.Reader, conte
+func NewTokenizerFragment(r io.Reader, contextTag string) *Tokenizer {
+	z := &Tokenizer{
+		r:   r,
+		buf: make([]byte, 0, 4096),
+	}
+	if contextTag != "" {
+		switch s := strings.ToLower(contextTag); s {
+		case "iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "title", "textarea", "xmp":
+			z.rawTag = s
+		}
+	}
+	return z
+}
