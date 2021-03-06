@@ -152,4 +152,8 @@ func (es *ElasticSearch) Search(stmt Statement, perPage int, page int) (result e
 	return
 }
 
-// Extract only regex-save
+// Extract only regex-save characters from a string so we can Sprintf
+func ExtractRegexSave(src string) string {
+	r := regexp.MustCompile(`\w+`)
+	return strings.Join(r.FindAllString(src, -1), "")
+}

@@ -1,0 +1,26 @@
+header h1 img {
+	margin-top: -15px;
+	height: 40px;
+}
+
+.header-btn {
+	margin-top: -10px;
+}
+
+.stat, #form-search .checkbox {
+	margin-top: 15px;
+	margin-left: 40px;
+}
+
+#form-search input, #form-search button[type="submit"] {
+	color: #000;
+	border-color: #000;
+}
+
+#form-search input {
+	border-top-left-radius: 3px;
+	border-bottom-left-radius: 3px;
+}
+#form-search button[type="submit"] {
+	border-top-right-radius: 3px;
+	border-bottom
