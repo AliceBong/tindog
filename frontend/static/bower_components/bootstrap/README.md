@@ -52,4 +52,35 @@ bootstrap/
     └── glyphicons-halflings-regular.woff
 ```
 
-We provide compiled CSS and JS (`bootstrap.*`), as well as compiled and minified CSS and JS (`bootstrap.min.*`). Fonts from Gly
+We provide compiled CSS and JS (`bootstrap.*`), as well as compiled and minified CSS and JS (`bootstrap.min.*`). Fonts from Glyphicons are included, as is the optional Bootstrap theme.
+
+
+
+## Bugs and feature requests
+
+Have a bug or a feature request? Please first read the [issue guidelines](https://github.com/twbs/bootstrap/blob/master/CONTRIBUTING.md#using-the-issue-tracker) and search for existing and closed issues. If your problem or idea is not addressed yet, [please open a new issue](https://github.com/twbs/bootstrap/issues/new).
+
+
+## Documentation
+
+Bootstrap's documentation, included in this repo in the root directory, is built with [Jekyll](http://jekyllrb.com) and publicly hosted on GitHub Pages at <http://getbootstrap.com>. The docs may also be run locally.
+
+### Running documentation locally
+
+1. If necessary, [install Jekyll](http://jekyllrb.com/docs/installation) (requires v2.5.x).
+  - **Windows users:** Read [this unofficial guide](http://jekyll-windows.juthilo.com/) to get Jekyll up and running without problems.
+2. Install the Ruby-based syntax highlighter, [Rouge](https://github.com/jneen/rouge), with `gem install rouge`.
+3. From the root `/bootstrap` directory, run `jekyll serve` in the command line.
+4. Open <http://localhost:9001> in your browser, and voilà.
+
+Learn more about using Jekyll by reading its [documentation](http://jekyllrb.com/docs/home/).
+
+### Documentation for previous releases
+
+Documentation for v2.3.2 has been made available for the time being at <http://getbootstrap.com/2.3.2/> while folks transition to Bootstrap 3.
+
+[Previous releases](https://github.com/twbs/bootstrap/releases) and their documentation are also available for download.
+
+
+
+## Contrib
