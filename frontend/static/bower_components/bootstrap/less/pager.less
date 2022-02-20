@@ -30,4 +30,25 @@
   .next {
     > a,
     > span {
- 
+      float: right;
+    }
+  }
+
+  .previous {
+    > a,
+    > span {
+      float: left;
+    }
+  }
+
+  .disabled {
+    > a,
+    > a:hover,
+    > a:focus,
+    > span {
+      color: @pager-disabled-color;
+      background-color: @pager-bg;
+      cursor: @cursor-disabled;
+    }
+  }
+}
