@@ -7021,4 +7021,76 @@ jQuery.extend({
 
 	attrHooks: {
 		type: {
-			set: function( 
+			set: function( elem, value ) {
+				if ( !support.radioValue && value === "radio" &&
+					jQuery.nodeName( elem, "input" ) ) {
+					var val = elem.value;
+					elem.setAttribute( "type", value );
+					if ( val ) {
+						elem.value = val;
+					}
+					return value;
+				}
+			}
+		}
+	}
+});
+
+// Hooks for boolean attributes
+boolHook = {
+	set: function( elem, value, name ) {
+		if ( value === false ) {
+			// Remove boolean attributes when set to false
+			jQuery.removeAttr( elem, name );
+		} else {
+			elem.setAttribute( name, name );
+		}
+		return name;
+	}
+};
+jQuery.each( jQuery.expr.match.bool.source.match( /\w+/g ), function( i, name ) {
+	var getter = attrHandle[ name ] || jQuery.find.attr;
+
+	attrHandle[ name ] = function( elem, name, isXML ) {
+		var ret, handle;
+		if ( !isXML ) {
+			// Avoid an infinite loop by temporarily removing this function from the getter
+			handle = attrHandle[ name ];
+			attrHandle[ name ] = ret;
+			ret = getter( elem, name, isXML ) != null ?
+				name.toLowerCase() :
+				null;
+			attrHandle[ name ] = handle;
+		}
+		return ret;
+	};
+});
+
+
+
+
+var rfocusable = /^(?:input|select|textarea|button)$/i;
+
+jQuery.fn.extend({
+	prop: function( name, value ) {
+		return access( this, jQuery.prop, name, value, arguments.length > 1 );
+	},
+
+	removeProp: function( name ) {
+		return this.each(function() {
+			delete this[ jQuery.propFix[ name ] || name ];
+		});
+	}
+});
+
+jQuery.extend({
+	propFix: {
+		"for": "htmlFor",
+		"class": "className"
+	},
+
+	prop: function( elem, name, value ) {
+		var ret, hooks, notxml,
+			nType = elem.nodeType;
+
+		// Don't get/set properties on text, c
