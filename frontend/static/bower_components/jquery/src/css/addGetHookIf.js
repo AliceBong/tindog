@@ -5,4 +5,18 @@ function addGetHookIf( conditionFn, hookFn ) {
 	return {
 		get: function() {
 			if ( conditionFn() ) {
-				// Hook not needed (or it's not
+				// Hook not needed (or it's not possible to use it due
+				// to missing dependency), remove it.
+				delete this.get;
+				return;
+			}
+
+			// Hook needed; redefine it so that the support test is not executed again.
+			return (this.get = hookFn).apply( this, arguments );
+		}
+	};
+}
+
+return addGetHookIf;
+
+});
