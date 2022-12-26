@@ -4,4 +4,6 @@ define([
 
 support.focusinBubbles = "onfocusin" in window;
 
-return 
+return support;
+
+});
