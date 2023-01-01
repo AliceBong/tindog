@@ -28,4 +28,67 @@ define([
  */
 
 var docElem = window.document.documentElement,
-	selector_hasDuplicate
+	selector_hasDuplicate,
+	matches = docElem.matches ||
+		docElem.webkitMatchesSelector ||
+		docElem.mozMatchesSelector ||
+		docElem.oMatchesSelector ||
+		docElem.msMatchesSelector,
+	selector_sortOrder = function( a, b ) {
+		// Flag for duplicate removal
+		if ( a === b ) {
+			selector_hasDuplicate = true;
+			return 0;
+		}
+
+		var compare = b.compareDocumentPosition && a.compareDocumentPosition && a.compareDocumentPosition( b );
+
+		if ( compare ) {
+			// Disconnected nodes
+			if ( compare & 1 ) {
+
+				// Choose the first element that is related to our document
+				if ( a === document || jQuery.contains(document, a) ) {
+					return -1;
+				}
+				if ( b === document || jQuery.contains(document, b) ) {
+					return 1;
+				}
+
+				// Maintain original order
+				return 0;
+			}
+
+			return compare & 4 ? -1 : 1;
+		}
+
+		// Not directly comparable, sort on existence of method
+		return a.compareDocumentPosition ? -1 : 1;
+	};
+
+jQuery.extend({
+	find: function( selector, context, results, seed ) {
+		var elem, nodeType,
+			i = 0;
+
+		results = results || [];
+		context = context || document;
+
+		// Same basic safeguard as Sizzle
+		if ( !selector || typeof selector !== "string" ) {
+			return results;
+		}
+
+		// Early return if context is not an element or document
+		if ( (nodeType = context.nodeType) !== 1 && nodeType !== 9 ) {
+			return [];
+		}
+
+		if ( seed ) {
+			while ( (elem = seed[i++]) ) {
+				if ( jQuery.find.matchesSelector(elem, selector) ) {
+					results.push( elem );
+				}
+			}
+		} else {
+			jQuery.merge( results, context
