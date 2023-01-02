@@ -91,4 +91,70 @@ jQuery.extend({
 				}
 			}
 		} else {
-			jQuery.merge( results, context
+			jQuery.merge( results, context.querySelectorAll(selector) );
+		}
+
+		return results;
+	},
+	unique: function( results ) {
+		var elem,
+			duplicates = [],
+			i = 0,
+			j = 0;
+
+		selector_hasDuplicate = false;
+		results.sort( selector_sortOrder );
+
+		if ( selector_hasDuplicate ) {
+			while ( (elem = results[i++]) ) {
+				if ( elem === results[ i ] ) {
+					j = duplicates.push( i );
+				}
+			}
+			while ( j-- ) {
+				results.splice( duplicates[ j ], 1 );
+			}
+		}
+
+		return results;
+	},
+	text: function( elem ) {
+		var node,
+			ret = "",
+			i = 0,
+			nodeType = elem.nodeType;
+
+		if ( !nodeType ) {
+			// If no nodeType, this is expected to be an array
+			while ( (node = elem[i++]) ) {
+				// Do not traverse comment nodes
+				ret += jQuery.text( node );
+			}
+		} else if ( nodeType === 1 || nodeType === 9 || nodeType === 11 ) {
+			// Use textContent for elements
+			return elem.textContent;
+		} else if ( nodeType === 3 || nodeType === 4 ) {
+			return elem.nodeValue;
+		}
+		// Do not include comment or processing instruction nodes
+
+		return ret;
+	},
+	contains: function( a, b ) {
+		var adown = a.nodeType === 9 ? a.documentElement : a,
+			bup = b && b.parentNode;
+		return a === bup || !!( bup && bup.nodeType === 1 && adown.contains(bup) );
+	},
+	isXMLDoc: function( elem ) {
+		return (elem.ownerDocument || elem).documentElement.nodeName !== "HTML";
+	},
+	expr: {
+		attrHandle: {},
+		match: {
+			bool: /^(?:checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped)$/i,
+			needsContext: /^[\x20\t\r\n\f]*[>+~]/
+		}
+	}
+});
+
+jQuery.extend( jQ
