@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Find Your File</title>
+
+		<link rel="stylesheet" href="/static/bower_components/bootstrap/dist/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="/static/app.css" />
+{% comment %}
+		<script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
+		<script src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+		<script src="/static/app.js"></script>
+{% endcomment %}
+
+		{% block head %}
+		{% endblock %}
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-md-9 col-md-offset-1">
+					<header>
+						<h1>
+							<a href="/s"><img src="/static/logo.svg" /></a> 
+							Find Your File 
+							<a href="/help" class="btn btn-default header-btn"><span class="glyphicon glyphicon-earphone"></span> Help</a>
+							<a href="/servers" class="btn btn-default header-btn"><span class="glyphicon glyphicon-th-list"></span> Servers</a>
+						</h3>
+					</header>
+					<article>
+						{% include "_searchform.tmpl" 
