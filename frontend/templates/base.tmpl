@@ -29,4 +29,16 @@
 						</h3>
 					</header>
 					<article>
-						{% include "_searchform.tmpl" 
+						{% include "_searchform.tmpl" %}
+						{% block article %}
+						{% endblock %}
+					</article>
+					<footer>
+						{% block footer %}
+						{% endblock %}
+					</footer>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

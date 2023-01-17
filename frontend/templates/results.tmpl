@@ -1,0 +1,43 @@
+{% extends "base.tmpl" %}
+
+{% block article %}
+	{% if results %}
+		<p class="stat">{{ response.Hits.Total }} results in {{ elapsed }}ms</p>
+	{% endif %}
+
+	{% if !results and query %}
+		<div class="alert alert-info" role="alert"><i class="glyphicon glyphicon glyphicon-info-sign" aria-hidden="true"></i> No results</div>
+	{% endif %}
+
+	{% if !query %}
+		<div class="alert alert-info" role="alert"><i class="glyphicon glyphicon-info-sign" aria-hidden="true"></i> Enter a query …!</div>
+	{% endif %}
+
+	<ol id="search-results" start="{{frompage + 1}}">
+		{% for result in results %}
+			<li>
+				<a href="{{result.Servers.0.Url}}{{result.Servers.0.Path}}">
+					<h3>{{ result.Filename }} <small>{{ result.HumanSize }}</small></h3>
+				</a>
+				On the following servers:
+				<ul>
+					{% for server in result.Servers %}
+						<li class="link"><a href="{{server.Url}}{{server.Path}}">{{server.Url}}{{server.Path}}</a></li>
+					{% endfor %}
+				</ul>
+			</li>
+		{% endfor %}
+	</ol>
+{% endblock %}
+
+{% block footer %}
+	{% if results %}
+		<nav>
+			<ul class="pager">
+				<li {% if page == 0 %}class="disabled"{% endif %}><a href="{{prevpage}}">Previous</a></li>
+				<li>{{page+1}} / {{maxpages+1}}</li>
+				<li {% if page == maxpages %}class="disabled"{% endif %}><a href="{{nextpage}}">Next</a></li>
+			</ul>
+		</nav>
+	{% endif %}
+{% endblock %}
