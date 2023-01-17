@@ -62,4 +62,18 @@ jQuery.fn.extend({
 		var isFunction = jQuery.isFunction( html );
 
 		return this.each(function( i ) {
-			jQuery( this ).wrapAll( isFunction ? html.call(this, i) :
+			jQuery( this ).wrapAll( isFunction ? html.call(this, i) : html );
+		});
+	},
+
+	unwrap: function() {
+		return this.parent().each(function() {
+			if ( !jQuery.nodeName( this, "body" ) ) {
+				jQuery( this ).replaceWith( this.childNodes );
+			}
+		}).end();
+	}
+});
+
+return jQuery;
+});
