@@ -77,4 +77,67 @@ func humanateBytes(s uint64, base float64, sizes []string) string {
 		f = "%.1f %s"
 	}
 
-	return fmt.Sprintf(f, val, 
+	return fmt.Sprintf(f, val, suffix)
+}
+
+// Bytes produces a human readable representation of an SI size.
+//
+// See also: ParseBytes.
+//
+// Bytes(82854982) -> 83 MB
+func Bytes(s uint64) string {
+	sizes := []string{"B", "kB", "MB", "GB", "TB", "PB", "EB"}
+	return humanateBytes(s, 1000, sizes)
+}
+
+// IBytes produces a human readable representation of an IEC size.
+//
+// See also: ParseBytes.
+//
+// IBytes(82854982) -> 79 MiB
+func IBytes(s uint64) string {
+	sizes := []string{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"}
+	return humanateBytes(s, 1024, sizes)
+}
+
+// ParseBytes parses a string representation of bytes into the number
+// of bytes it represents.
+//
+// See Also: Bytes, IBytes.
+//
+// ParseBytes("42 MB") -> 42000000, nil
+// ParseBytes("42 mib") -> 44040192, nil
+func ParseBytes(s string) (uint64, error) {
+	lastDigit := 0
+	hasComma := false
+	for _, r := range s {
+		if !(unicode.IsDigit(r) || r == '.' || r == ',') {
+			break
+		}
+		if r == ',' {
+			hasComma = true
+		}
+		lastDigit++
+	}
+
+	num := s[:lastDigit]
+	if hasComma {
+		num = strings.Replace(num, ",", "", -1)
+	}
+
+	f, err := strconv.ParseFloat(num, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	extra := strings.ToLower(strings.TrimSpace(s[lastDigit:]))
+	if m, ok := bytesSizeTable[extra]; ok {
+		f *= float64(m)
+		if f >= math.MaxUint64 {
+			return 0, fmt.Errorf("too large: %v", s)
+		}
+		return uint64(f), nil
+	}
+
+	return 0, fmt.Errorf("unhandled size name: %v", extra)
+}
