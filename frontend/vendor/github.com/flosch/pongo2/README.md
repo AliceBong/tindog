@@ -110,4 +110,26 @@ If you're using the `master`-branch of pongo2, you might be interested in this s
 
 # Documentation
 
-For a documentation on how the templating language works you can [head over to the Django documentati
+For a documentation on how the templating language works you can [head over to the Django documentation](https://docs.djangoproject.com/en/dev/topics/templates/). pongo2 aims to be compatible with it.
+
+You can access pongo2's API documentation on [godoc](https://godoc.org/github.com/flosch/pongo2).
+
+## Blog post series
+
+ * [pongo2 v2 released](https://www.florian-schlachter.de/post/pongo2-v2/)
+ * [pongo2 1.0 released](https://www.florian-schlachter.de/post/pongo2-10/) [August 8th 2014]
+ * [pongo2 playground](https://www.florian-schlachter.de/post/pongo2-playground/) [August 1st 2014]
+ * [Release of pongo2 1.0-rc1 + pongo2-addons](https://www.florian-schlachter.de/post/pongo2-10-rc1/) [July 30th 2014]
+ * [Introduction to pongo2 + migration- and "how to write tags/filters"-tutorial.](https://www.florian-schlachter.de/post/pongo2/) [June 29th 2014]
+
+## Caveats 
+
+### Filters
+
+ * **date** / **time**: The `date` and `time` filter are taking the Golang specific time- and date-format (not Django's one) currently. [Take a look on the format here](http://golang.org/pkg/time/#Time.Format).
+ * **stringformat**: `stringformat` does **not** take Python's string format syntax as a parameter, instead it takes Go's. Essentially `{{ 3.14|stringformat:"pi is %.2f" }}` is `fmt.Sprintf("pi is %.2f", 3.14)`.
+ * **escape** / **force_escape**: Unlike Django's behaviour, the `escape`-filter is applied immediately. Therefore there is no need for a `force_escape`-filter yet.
+
+### Tags
+
+ * **for**: All the `forloop` fields (like `forloop.counter`) are written with a capital letter at the beginning. For example, the `counter` can be a
