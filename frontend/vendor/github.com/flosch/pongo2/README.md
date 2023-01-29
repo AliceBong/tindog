@@ -74,4 +74,23 @@ Please use the [issue tracker](https://github.com/flosch/pongo2/issues) if you'r
 **Deprecated versions** (not supported anymore): v1
 
 | Topic                                | Status                                                                                 |
-| ------------------------------------ | -----------------------------------------------------------------------------------
+| ------------------------------------ | -------------------------------------------------------------------------------------- |       
+| Django version compatibility:        | [1.7](https://docs.djangoproject.com/en/1.7/ref/templates/builtins/)                  |
+| *Missing* (planned) **filters**:     | none ([hints](https://github.com/flosch/pongo2/blob/master/filters_builtin.go#L3))     | 
+| *Missing* (planned) **tags**:        | none ([hints](https://github.com/flosch/pongo2/blob/master/tags.go#L3))                |
+
+Please also have a look on the [caveats](https://github.com/flosch/pongo2#caveats) and on the [official add-ons](https://github.com/flosch/pongo2#official).
+
+## Features (and new in pongo2)
+
+ * Entirely rewritten from the ground-up.
+ * [Advanced C-like expressions](https://github.com/flosch/pongo2/blob/master/template_tests/expressions.tpl).
+ * [Complex function calls within expressions](https://github.com/flosch/pongo2/blob/master/template_tests/function_calls_wrapper.tpl).
+ * [Easy API to create new filters and tags](http://godoc.org/github.com/flosch/pongo2#RegisterFilter) ([including parsing arguments](http://godoc.org/github.com/flosch/pongo2#Parser))
+ * Additional features:
+    * Macros including importing macros from other files (see [template_tests/macro.tpl](https://github.com/flosch/pongo2/blob/master/template_tests/macro.tpl))
+    * [Template sandboxing](https://godoc.org/github.com/flosch/pongo2#TemplateSet) ([directory patterns](http://golang.org/pkg/path/filepath/#Match), banned tags/filters)
+
+## Recent API changes within pongo2
+
+If you're using the `master`-branch of pongo2, you might be interested in this section. Since pongo2 is still in development (even though there is a first st
