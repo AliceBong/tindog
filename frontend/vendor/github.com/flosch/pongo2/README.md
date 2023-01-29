@@ -93,4 +93,21 @@ Please also have a look on the [caveats](https://github.com/flosch/pongo2#caveat
 
 ## Recent API changes within pongo2
 
-If you're using the `master`-branch of pongo2, you might be interested in this section. Since pongo2 is still in development (even though there is a first st
+If you're using the `master`-branch of pongo2, you might be interested in this section. Since pongo2 is still in development (even though there is a first stable release!), there could be (backwards-incompatible) API changes over time. To keep track of these and therefore make it painless for you to adapt your codebase, I'll list them here.
+
+ * Function signature for tag and filter parsing/execution changed (`error` return type changed to `*Error`).
+ * `INodeEvaluator` has been removed and got replaced by `IEvaluator`. You can change your existing tags/filters by simply replacing the interface.
+ * Two new helper functions: [`RenderTemplateFile()`](https://godoc.org/github.com/flosch/pongo2#RenderTemplateFile) and [`RenderTemplateString()`](https://godoc.org/github.com/flosch/pongo2#RenderTemplateString).
+ * `Template.ExecuteRW()` is now [`Template.ExecuteWriter()`](https://godoc.org/github.com/flosch/pongo2#Template.ExecuteWriter)
+ * `Template.Execute*()` functions do now take a `pongo2.Context` directly (no pointer anymore).
+
+## How you can help
+
+ * Write [filters](https://github.com/flosch/pongo2/blob/master/filters_builtin.go#L3) / [tags](https://github.com/flosch/pongo2/blob/master/tags.go#L4) (see [tutorial](https://www.florian-schlachter.de/post/pongo2/)) by forking pongo2 and sending pull requests
+ * Write/improve code tests (use the following command to see what tests are missing: `go test -v -cover -covermode=count -coverprofile=cover.out && go tool cover -html=cover.out`)
+ * Write/improve template tests (see the `template_tests/` directory)
+ * Write middleware, libraries and websites using pongo2. :-)
+
+# Documentation
+
+For a documentation on how the templating language works you can [head over to the Django documentati
