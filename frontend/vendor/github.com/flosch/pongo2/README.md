@@ -132,4 +132,28 @@ You can access pongo2's API documentation on [godoc](https://godoc.org/github.co
 
 ### Tags
 
- * **for**: All the `forloop` fields (like `forloop.counter`) are written with a capital letter at the beginning. For example, the `counter` can be a
+ * **for**: All the `forloop` fields (like `forloop.counter`) are written with a capital letter at the beginning. For example, the `counter` can be accessed by `forloop.Counter` and the parentloop by `forloop.Parentloop`.
+ * **now**: takes Go's time format (see **date** and **time**-filter).
+
+### Misc
+
+ * **not in-operator**: You can check whether a map/struct/string contains a key/field/substring by using the in-operator (or the negation of it):
+    `{% if key in map %}Key is in map{% else %}Key not in map{% endif %}` or `{% if !(key in map) %}Key is NOT in map{% else %}Key is in map{% endif %}`.
+
+# Add-ons, libraries and helpers
+
+## Official
+
+ * [ponginae](https://github.com/flosch/ponginae) - A web-framework for Go (using pongo2).
+ * [pongo2-tools](https://github.com/flosch/pongo2-tools) - Official tools and helpers for pongo2
+ * [pongo2-addons](https://github.com/flosch/pongo2-addons) - Official additional filters/tags for pongo2 (for example a **markdown**-filter). They are in their own repository because they're relying on 3rd-party-libraries.
+
+## 3rd-party
+
+ * [beego-pongo2](https://github.com/oal/beego-pongo2) - A tiny little helper for using Pongo2 with [Beego](https://github.com/astaxie/beego).
+ * [beego-pongo2.v2](https://github.com/ipfans/beego-pongo2.v2) - Same as `beego-pongo2`, but for pongo2 v2.
+ * [macaron-pongo2](https://github.com/macaron-contrib/pongo2) - pongo2 support for [Macaron](https://github.com/Unknwon/macaron), a modular web framework.
+ * [ginpongo2](https://github.com/ngerakines/ginpongo2) - middleware for [gin](github.com/gin-gonic/gin) to use pongo2 templates
+ * [pongo2-trans](https://github.com/fromYukki/pongo2trans) - `trans`-tag implementation for internationalization
+
+Please add your project to this list and send 
