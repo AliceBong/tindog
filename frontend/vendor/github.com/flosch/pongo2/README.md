@@ -156,4 +156,62 @@ You can access pongo2's API documentation on [godoc](https://godoc.org/github.co
  * [ginpongo2](https://github.com/ngerakines/ginpongo2) - middleware for [gin](github.com/gin-gonic/gin) to use pongo2 templates
  * [pongo2-trans](https://github.com/fromYukki/pongo2trans) - `trans`-tag implementation for internationalization
 
-Please add your project to this list and send 
+Please add your project to this list and send me a pull request when you've developed something nice for pongo2.
+
+# API-usage examples
+
+Please see the documentation for a full list of provided API methods.
+
+## A tiny example (template string)
+
+```Go
+// Compile the template first (i. e. creating the AST)
+tpl, err := pongo2.FromString("Hello {{ name|capfirst }}!")
+if err != nil {
+	panic(err)
+}
+// Now you can render the template with the given 
+// pongo2.Context how often you want to.
+out, err := tpl.Execute(pongo2.Context{"name": "florian"})
+if err != nil {
+	panic(err)
+}
+fmt.Println(out) // Output: Hello Florian!
+```
+
+## Example server-usage (template file)
+
+```Go
+package main
+
+import (
+	"github.com/flosch/pongo2"
+	"net/http"
+)
+
+// Pre-compiling the templates at application startup using the
+// little Must()-helper function (Must() will panic if FromFile()
+// or FromString() will return with an error - that's it).
+// It's faster to pre-compile it anywhere at startup and only
+// execute the template later.
+var tplExample = pongo2.Must(pongo2.FromFile("example.html"))
+
+func examplePage(w http.ResponseWriter, r *http.Request) {
+	// Execute the template per HTTP request
+	err := tplExample.ExecuteWriter(pongo2.Context{"query": r.FormValue("query")}, w)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func main() {
+	http.HandleFunc("/", examplePage)
+	http.ListenAndServe(":8080", nil)
+}
+```
+
+# Benchmark
+
+The benchmarks have been run on the my machine (`Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz`) using the command:
+
+    go test -b
