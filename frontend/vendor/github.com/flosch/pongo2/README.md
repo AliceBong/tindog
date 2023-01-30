@@ -214,4 +214,26 @@ func main() {
 
 The benchmarks have been run on the my machine (`Intel(R) Core(TM) i7-2600 CPU @ 3.40GHz`) using the command:
 
-    go test -b
+    go test -bench . -cpu 1,2,4,8
+
+All benchmarks are compiling (depends on the benchmark) and executing the `template_tests/complex.tpl` template.
+
+The results are:
+
+    BenchmarkExecuteComplexWithSandboxActive                50000             60450 ns/op
+    BenchmarkExecuteComplexWithSandboxActive-2              50000             56998 ns/op
+    BenchmarkExecuteComplexWithSandboxActive-4              50000             60343 ns/op
+    BenchmarkExecuteComplexWithSandboxActive-8              50000             64229 ns/op
+    BenchmarkCompileAndExecuteComplexWithSandboxActive      10000            164410 ns/op
+    BenchmarkCompileAndExecuteComplexWithSandboxActive-2    10000            156682 ns/op
+    BenchmarkCompileAndExecuteComplexWithSandboxActive-4    10000            164821 ns/op
+    BenchmarkCompileAndExecuteComplexWithSandboxActive-8    10000            171806 ns/op
+    BenchmarkParallelExecuteComplexWithSandboxActive        50000             60428 ns/op
+    BenchmarkParallelExecuteComplexWithSandboxActive-2      50000             31887 ns/op
+    BenchmarkParallelExecuteComplexWithSandboxActive-4     100000             22810 ns/op
+    BenchmarkParallelExecuteComplexWithSandboxActive-8     100000             18820 ns/op
+    BenchmarkExecuteComplexWithoutSandbox                   50000             56942 ns/op
+    BenchmarkExecuteComplexWithoutSandbox-2                 50000             56168 ns/op
+    BenchmarkExecuteComplexWithoutSandbox-4                 50000             57838 ns/op
+    BenchmarkExecuteComplexWithoutSandbox-8                 50000             60539 ns/op
+    BenchmarkCompileAndExecuteC
