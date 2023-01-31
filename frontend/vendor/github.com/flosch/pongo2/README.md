@@ -236,4 +236,13 @@ The results are:
     BenchmarkExecuteComplexWithoutSandbox-2                 50000             56168 ns/op
     BenchmarkExecuteComplexWithoutSandbox-4                 50000             57838 ns/op
     BenchmarkExecuteComplexWithoutSandbox-8                 50000             60539 ns/op
-    BenchmarkCompileAndExecuteC
+    BenchmarkCompileAndExecuteComplexWithoutSandbox         10000            162086 ns/op
+    BenchmarkCompileAndExecuteComplexWithoutSandbox-2       10000            159771 ns/op
+    BenchmarkCompileAndExecuteComplexWithoutSandbox-4       10000            163826 ns/op
+    BenchmarkCompileAndExecuteComplexWithoutSandbox-8       10000            169062 ns/op
+    BenchmarkParallelExecuteComplexWithoutSandbox           50000             57152 ns/op
+    BenchmarkParallelExecuteComplexWithoutSandbox-2         50000             30276 ns/op
+    BenchmarkParallelExecuteComplexWithoutSandbox-4        100000             22065 ns/op
+    BenchmarkParallelExecuteComplexWithoutSandbox-8        100000             18034 ns/op
+
+Benchmarked on October 2nd 2014.
