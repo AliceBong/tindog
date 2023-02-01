@@ -20,4 +20,12 @@
 //     if err != nil {
 //         panic(err)
 //     }
-//     // No
+//     // Now you can render the template with the given
+//     // pongo2.Context how often you want to.
+//     out, err := tpl.Execute(pongo2.Context{"name": "fred"})
+//     if err != nil {
+//         panic(err)
+//     }
+//     fmt.Println(out) // Output: Hello Fred!
+//
+package pongo2
