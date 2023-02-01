@@ -37,4 +37,77 @@ func ReplaceFilter(name string, fn FilterFunction) {
 	filters[name] = fn
 }
 
-// Like ApplyFilter, but
+// Like ApplyFilter, but panics on an error
+func MustApplyFilter(name string, value *Value, param *Value) *Value {
+	val, err := ApplyFilter(name, value, param)
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+// Applies a filter to a given value using the given parameters. Returns a *pongo2.Value or an error.
+func ApplyFilter(name string, value *Value, param *Value) (*Value, *Error) {
+	fn, existing := filters[name]
+	if !existing {
+		return nil, &Error{
+			Sender:   "applyfilter",
+			ErrorMsg: fmt.Sprintf("Filter with name '%s' not found.", name),
+		}
+	}
+
+	// Make sure param is a *Value
+	if param == nil {
+		param = AsValue(nil)
+	}
+
+	return fn(value, param)
+}
+
+type filterCall struct {
+	token *Token
+
+	name      string
+	parameter IEvaluator
+
+	filterFunc FilterFunction
+}
+
+func (fc *filterCall) Execute(v *Value, ctx *ExecutionContext) (*Value, *Error) {
+	var param *Value
+	var err *Error
+
+	if fc.parameter != nil {
+		param, err = fc.parameter.Evaluate(ctx)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		param = AsValue(nil)
+	}
+
+	filtered_value, err := fc.filterFunc(v, param)
+	if err != nil {
+		return nil, err.updateFromTokenIfNeeded(ctx.template, fc.token)
+	}
+	return filtered_value, nil
+}
+
+// Filter = IDENT | IDENT ":" FilterArg | IDENT "|" Filter
+func (p *Parser) parseFilter() (*filterCall, *Error) {
+	ident_token := p.MatchType(TokenIdentifier)
+
+	// Check filter ident
+	if ident_token == nil {
+		return nil, p.Error("Filter name must be an identifier.", nil)
+	}
+
+	filter := &filterCall{
+		token: ident_token,
+		name:  ident_token.Val,
+	}
+
+	// Get the appropriate filter function and bind it
+	filterFn, exists := filters[ident_token.Val]
+	if !exists {
+		return nil, p.Error(f
