@@ -59,4 +59,28 @@ func (e *Error) Error() string {
 }
 
 // Returns the affected line from the original template, if available.
-func (e *Error) RawL
+func (e *Error) RawLine() (line string, available bool) {
+	if e.Line <= 0 || e.Filename == "<string>" {
+		return "", false
+	}
+
+	filename := e.Filename
+	if e.Template != nil {
+		filename = e.Template.set.resolveFilename(e.Template, e.Filename)
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	l := 0
+	for scanner.Scan() {
+		l++
+		if l == e.Line {
+			return scanner.Text(), true
+		}
+	}
+	return "", false
+}
