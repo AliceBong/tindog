@@ -110,4 +110,24 @@ func (p *Parser) parseFilter() (*filterCall, *Error) {
 	// Get the appropriate filter function and bind it
 	filterFn, exists := filters[ident_token.Val]
 	if !exists {
-		return nil, p.Error(f
+		return nil, p.Error(fmt.Sprintf("Filter '%s' does not exist.", ident_token.Val), ident_token)
+	}
+
+	filter.filterFunc = filterFn
+
+	// Check for filter-argument (2 tokens needed: ':' ARG)
+	if p.Match(TokenSymbol, ":") != nil {
+		if p.Peek(TokenSymbol, "}}") != nil {
+			return nil, p.Error("Filter parameter required after ':'.", nil)
+		}
+
+		// Get filter argument expression
+		v, err := p.parseVariableOrLiteral()
+		if err != nil {
+			return nil, err
+		}
+		filter.parameter = v
+	}
+
+	return filter, nil
+}
