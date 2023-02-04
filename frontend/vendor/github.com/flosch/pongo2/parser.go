@@ -175,4 +175,65 @@ func (p *Parser) GetR(shift int) *Token {
 	return p.Get(i)
 }
 
-// Produces a nice error message and ret
+// Produces a nice error message and returns an error-object.
+// The 'token'-argument is optional. If provided, it will take
+// the token's position information. If not provided, it will
+// automatically use the CURRENT token's position information.
+func (p *Parser) Error(msg string, token *Token) *Error {
+	if token == nil {
+		// Set current token
+		token = p.Current()
+		if token == nil {
+			// Set to last token
+			if len(p.tokens) > 0 {
+				token = p.tokens[len(p.tokens)-1]
+			}
+		}
+	}
+	var line, col int
+	if token != nil {
+		line = token.Line
+		col = token.Col
+	}
+	return &Error{
+		Template: p.template,
+		Filename: p.name,
+		Sender:   "parser",
+		Line:     line,
+		Column:   col,
+		Token:    token,
+		ErrorMsg: msg,
+	}
+}
+
+// Wraps all nodes between starting tag and "{% endtag %}" and provides
+// one simple interface to execute the wrapped nodes.
+// It returns a parser to process provided arguments to the tag.
+func (p *Parser) WrapUntilTag(names ...string) (*NodeWrapper, *Parser, *Error) {
+	wrapper := &NodeWrapper{}
+
+	tagArgs := make([]*Token, 0)
+
+	for p.Remaining() > 0 {
+		// New tag, check whether we have to stop wrapping here
+		if p.Peek(TokenSymbol, "{%") != nil {
+			tag_ident := p.PeekTypeN(1, TokenIdentifier)
+
+			if tag_ident != nil {
+				// We've found a (!) end-tag
+
+				found := false
+				for _, n := range names {
+					if tag_ident.Val == n {
+						found = true
+						break
+					}
+				}
+
+				// We only process the tag if we've found an end tag
+				if found {
+					// Okay, endtag found.
+					p.ConsumeN(2) // '{%' tagname
+
+					for {
+						if p.Match(TokenSymbol, "%}") != nil 
