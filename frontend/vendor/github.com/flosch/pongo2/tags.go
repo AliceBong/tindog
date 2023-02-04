@@ -101,3 +101,33 @@ func (p *Parser) parseTagElement() (INodeTag, *Error) {
 		// Does not exists
 		return nil, p.Error(fmt.Sprintf("Tag '%s' not found (or beginning tag not provided)", token_name.Val), token_name)
 	}
+
+	// Check sandbox tag restriction
+	if _, is_banned := p.template.set.bannedTags[token_name.Val]; is_banned {
+		return nil, p.Error(fmt.Sprintf("Usage of tag '%s' is not allowed (sandbox restriction active).", token_name.Val), token_name)
+	}
+
+	args_token := make([]*Token, 0)
+	for p.Peek(TokenSymbol, "%}") == nil && p.Remaining() > 0 {
+		// Add token to args
+		args_token = append(args_token, p.Current())
+		p.Consume() // next token
+	}
+
+	// EOF?
+	if p.Remaining() == 0 {
+		return nil, p.Error("Unexpectedly reached EOF, no tag end found.", p.last_token)
+	}
+
+	p.Match(TokenSymbol, "%}")
+
+	arg_parser := newParser(p.name, args_token, p.template)
+	if len(args_token) == 0 {
+		// This is done to have nice EOF error messages
+		arg_parser.last_token = token_name
+	}
+
+	p.template.level++
+	defer func() { p.template.level-- }()
+	return tag.parser(p, token_name, arg_parser)
+}
