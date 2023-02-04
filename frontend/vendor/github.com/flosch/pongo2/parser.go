@@ -107,4 +107,72 @@ func (p *Parser) PeekType(typ TokenType) *Token {
 }
 
 // Returns the CURRENT token if the given type AND value matches.
-// It 
+// It DOES NOT consume the token.
+func (p *Parser) Peek(typ TokenType, val string) *Token {
+	return p.PeekN(0, typ, val)
+}
+
+// Returns the CURRENT token if the given type AND *one* of
+// the given values matches.
+// It DOES NOT consume the token.
+func (p *Parser) PeekOne(typ TokenType, vals ...string) *Token {
+	for _, v := range vals {
+		t := p.PeekN(0, typ, v)
+		if t != nil {
+			return t
+		}
+	}
+	return nil
+}
+
+// Returns the tokens[current position + shift] token if the
+// given type AND value matches for that token.
+// DOES NOT consume the token.
+func (p *Parser) PeekN(shift int, typ TokenType, val string) *Token {
+	t := p.Get(p.idx + shift)
+	if t != nil {
+		if t.Typ == typ && t.Val == val {
+			return t
+		}
+	}
+	return nil
+}
+
+// Returns the tokens[current position + shift] token if the given type matches.
+// DOES NOT consume the token for that token.
+func (p *Parser) PeekTypeN(shift int, typ TokenType) *Token {
+	t := p.Get(p.idx + shift)
+	if t != nil {
+		if t.Typ == typ {
+			return t
+		}
+	}
+	return nil
+}
+
+// Returns the UNCONSUMED token count.
+func (p *Parser) Remaining() int {
+	return len(p.tokens) - p.idx
+}
+
+// Returns the total token count.
+func (p *Parser) Count() int {
+	return len(p.tokens)
+}
+
+// Returns tokens[i] or NIL (if i >= len(tokens))
+func (p *Parser) Get(i int) *Token {
+	if i < len(p.tokens) {
+		return p.tokens[i]
+	}
+	return nil
+}
+
+// Returns tokens[current-position + shift] or NIL
+// (if (current-position + i) >= len(tokens))
+func (p *Parser) GetR(shift int) *Token {
+	i := p.idx + shift
+	return p.Get(i)
+}
+
+// Produces a nice error message and ret
