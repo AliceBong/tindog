@@ -236,4 +236,32 @@ func (p *Parser) WrapUntilTag(names ...string) (*NodeWrapper, *Parser, *Error) {
 					p.ConsumeN(2) // '{%' tagname
 
 					for {
-						if p.Match(TokenSymbol, "%}") != nil 
+						if p.Match(TokenSymbol, "%}") != nil {
+							// Okay, end the wrapping here
+							wrapper.Endtag = tag_ident.Val
+							return wrapper, newParser(p.template.name, tagArgs, p.template), nil
+						} else {
+							t := p.Current()
+							p.Consume()
+							if t == nil {
+								return nil, nil, p.Error("Unexpected EOF.", p.last_token)
+							}
+							tagArgs = append(tagArgs, t)
+						}
+					}
+				}
+			}
+
+		}
+
+		// Otherwise process next element to be wrapped
+		node, err := p.parseDocElement()
+		if err != nil {
+			return nil, nil, err
+		}
+		wrapper.nodes = append(wrapper.nodes, node)
+	}
+
+	return nil, nil, p.Error(fmt.Sprintf("Unexpected EOF, expected tag %s.", strings.Join(names, " or ")),
+		p.last_token)
+}
