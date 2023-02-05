@@ -57,4 +57,38 @@ func tagBlockParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *Er
 		return nil, arguments.Error("Tag 'block' takes exactly 1 argument (an identifier).", nil)
 	}
 
-	wrapper, e
+	wrapper, endtagargs, err := doc.WrapUntilTag("endblock")
+	if err != nil {
+		return nil, err
+	}
+	if endtagargs.Remaining() > 0 {
+		endtagname_token := endtagargs.MatchType(TokenIdentifier)
+		if endtagname_token != nil {
+			if endtagname_token.Val != name_token.Val {
+				return nil, endtagargs.Error(fmt.Sprintf("Name for 'endblock' must equal to 'block'-tag's name ('%s' != '%s').",
+					name_token.Val, endtagname_token.Val), nil)
+			}
+		}
+
+		if endtagname_token == nil || endtagargs.Remaining() > 0 {
+			return nil, endtagargs.Error("Either no or only one argument (identifier) allowed for 'endblock'.", nil)
+		}
+	}
+
+	tpl := doc.template
+	if tpl == nil {
+		panic("internal error: tpl == nil")
+	}
+	_, has_block := tpl.blocks[name_token.Val]
+	if !has_block {
+		tpl.blocks[name_token.Val] = wrapper
+	} else {
+		return nil, arguments.Error(fmt.Sprintf("Block named '%s' already defined", name_token.Val), nil)
+	}
+
+	return &tagBlockNode{name: name_token.Val}, nil
+}
+
+func init() {
+	RegisterTag("block", tagBlockParser)
+}
