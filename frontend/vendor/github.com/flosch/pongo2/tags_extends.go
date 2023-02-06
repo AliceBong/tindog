@@ -48,4 +48,9 @@ func tagExtendsParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *
 		return nil, arguments.Error("Tag 'extends' does only take 1 argument.", nil)
 	}
 
-	return extends_
+	return extends_node, nil
+}
+
+func init() {
+	RegisterTag("extends", tagExtendsParser)
+}
