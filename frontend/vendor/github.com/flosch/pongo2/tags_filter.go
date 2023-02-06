@@ -68,4 +68,28 @@ func tagFilterParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *E
 
 		if arguments.MatchOne(TokenSymbol, ":") != nil {
 			// Filter parameter
-			// NOTICE: we can't use P
+			// NOTICE: we can't use ParseExpression() here, because it would parse the next filter "|..." as well in the argument list
+			expr, err := arguments.parseVariableOrLiteral()
+			if err != nil {
+				return nil, err
+			}
+			filterCall.param_expr = expr
+		}
+
+		filter_node.filterChain = append(filter_node.filterChain, filterCall)
+
+		if arguments.MatchOne(TokenSymbol, "|") == nil {
+			break
+		}
+	}
+
+	if arguments.Remaining() > 0 {
+		return nil, arguments.Error("Malformed filter-tag arguments.", nil)
+	}
+
+	return filter_node, nil
+}
+
+func init() {
+	RegisterTag("filter", tagFilterParser)
+}
