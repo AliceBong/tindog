@@ -36,4 +36,46 @@ func tagIfParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *Error
 	if err != nil {
 		return nil, err
 	}
-	if_node.cond
+	if_node.conditions = append(if_node.conditions, condition)
+
+	if arguments.Remaining() > 0 {
+		return nil, arguments.Error("If-condition is malformed.", nil)
+	}
+
+	// Check the rest
+	for {
+		wrapper, tag_args, err := doc.WrapUntilTag("elif", "else", "endif")
+		if err != nil {
+			return nil, err
+		}
+		if_node.wrappers = append(if_node.wrappers, wrapper)
+
+		if wrapper.Endtag == "elif" {
+			// elif can take a condition
+			condition, err := tag_args.ParseExpression()
+			if err != nil {
+				return nil, err
+			}
+			if_node.conditions = append(if_node.conditions, condition)
+
+			if tag_args.Remaining() > 0 {
+				return nil, tag_args.Error("Elif-condition is malformed.", nil)
+			}
+		} else {
+			if tag_args.Count() > 0 {
+				// else/endif can't take any conditions
+				return nil, tag_args.Error("Arguments not allowed here.", nil)
+			}
+		}
+
+		if wrapper.Endtag == "endif" {
+			break
+		}
+	}
+
+	return if_node, nil
+}
+
+func init() {
+	RegisterTag("if", tagIfParser)
+}
