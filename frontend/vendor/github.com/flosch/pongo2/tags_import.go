@@ -64,4 +64,23 @@ func tagImportParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *E
 		macro_instance, has := tpl.exported_macros[macro_name_token.Val]
 		if !has {
 			return nil, arguments.Error(fmt.Sprintf("Macro '%s' not found (or not exported) in '%s'.", macro_name_token.Val,
-				import_node
+				import_node.filename), macro_name_token)
+		}
+
+		import_node.macros[as_name] = macro_instance
+
+		if arguments.Remaining() == 0 {
+			break
+		}
+
+		if arguments.Match(TokenSymbol, ",") == nil {
+			return nil, arguments.Error("Expected ','.", nil)
+		}
+	}
+
+	return import_node, nil
+}
+
+func init() {
+	RegisterTag("import", tagImportParser)
+}
