@@ -98,4 +98,35 @@ func tagIncludeParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *
 	if arguments.Match(TokenIdentifier, "with") != nil {
 		for arguments.Remaining() > 0 {
 			// We have at least one key=expr pair (because of starting "with")
-			key_token := arg
+			key_token := arguments.MatchType(TokenIdentifier)
+			if key_token == nil {
+				return nil, arguments.Error("Expected an identifier", nil)
+			}
+			if arguments.Match(TokenSymbol, "=") == nil {
+				return nil, arguments.Error("Expected '='.", nil)
+			}
+			value_expr, err := arguments.ParseExpression()
+			if err != nil {
+				return nil, err.updateFromTokenIfNeeded(doc.template, key_token)
+			}
+
+			include_node.with_pairs[key_token.Val] = value_expr
+
+			// Only?
+			if arguments.Match(TokenIdentifier, "only") != nil {
+				include_node.only = true
+				break // stop parsing arguments because it's the last option
+			}
+		}
+	}
+
+	if arguments.Remaining() > 0 {
+		return nil, arguments.Error("Malformed 'include'-tag arguments.", nil)
+	}
+
+	return include_node, nil
+}
+
+func init() {
+	RegisterTag("include", tagIncludeParser)
+}
