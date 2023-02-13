@@ -43,4 +43,12 @@ func tagSpacelessParser(doc *Parser, start *Token, arguments *Parser) (INodeTag,
 	spaceless_node.wrapper = wrapper
 
 	if arguments.Remaining() > 0 {
-		return nil, arguments.Error("Malformed spaceless-
+		return nil, arguments.Error("Malformed spaceless-tag arguments.", nil)
+	}
+
+	return spaceless_node, nil
+}
+
+func init() {
+	RegisterTag("spaceless", tagSpacelessParser)
+}
