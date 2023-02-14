@@ -65,4 +65,28 @@ func tagWithParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *Err
 			}
 			key_token := arguments.MatchType(TokenIdentifier)
 			if key_token == nil {
-				return nil, arguments.Error("Expected an identif
+				return nil, arguments.Error("Expected an identifier", nil)
+			}
+			with_node.with_pairs[key_token.Val] = value_expr
+		} else {
+			key_token := arguments.MatchType(TokenIdentifier)
+			if key_token == nil {
+				return nil, arguments.Error("Expected an identifier", nil)
+			}
+			if arguments.Match(TokenSymbol, "=") == nil {
+				return nil, arguments.Error("Expected '='.", nil)
+			}
+			value_expr, err := arguments.ParseExpression()
+			if err != nil {
+				return nil, err
+			}
+			with_node.with_pairs[key_token.Val] = value_expr
+		}
+	}
+
+	return with_node, nil
+}
+
+func init() {
+	RegisterTag("with", tagWithParser)
+}
