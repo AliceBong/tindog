@@ -49,4 +49,73 @@ func newTemplate(set *TemplateSet, name string, is_tpl_string bool, tpl string) 
 	// Tokenize it
 	tokens, err := lex(name, tpl)
 	if err != nil {
-		return nil
+		return nil, err
+	}
+	t.tokens = tokens
+
+	// For debugging purposes, show all tokens:
+	/*for i, t := range tokens {
+		fmt.Printf("%3d. %s\n", i, t)
+	}*/
+
+	// Parse it
+	err = t.parse()
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func (tpl *Template) execute(context Context) (*bytes.Buffer, error) {
+	// Create output buffer
+	// We assume that the rendered template will be 30% larger
+	buffer := bytes.NewBuffer(make([]byte, 0, int(float64(tpl.size)*1.3)))
+
+	// Determine the parent to be executed (for template inheritance)
+	parent := tpl
+	for parent.parent != nil {
+		parent = parent.parent
+	}
+
+	// Create context if none is given
+	newContext := make(Context)
+	newContext.Update(tpl.set.Globals)
+
+	if context != nil {
+		newContext.Update(context)
+
+		if len(newContext) > 0 {
+			// Check for context name syntax
+			err := newContext.checkForValidIdentifiers()
+			if err != nil {
+				return nil, err
+			}
+
+			// Check for clashes with macro names
+			for k, _ := range newContext {
+				_, has := tpl.exported_macros[k]
+				if has {
+					return nil, &Error{
+						Filename: tpl.name,
+						Sender:   "execution",
+						ErrorMsg: fmt.Sprintf("Context key name '%s' clashes with macro '%s'.", k, k),
+					}
+				}
+			}
+		}
+	}
+
+	// Create operational context
+	ctx := newExecutionContext(parent, newContext)
+
+	// Run the selected document
+	err := parent.root.Execute(ctx, buffer)
+	if err != nil {
+		return nil, err
+	}
+	return buffer, nil
+}
+
+// Executes the template with the given context and writes to writer (io.Writer)
+// on success. C
