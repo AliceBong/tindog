@@ -118,4 +118,47 @@ func (tpl *Template) execute(context Context) (*bytes.Buffer, error) {
 }
 
 // Executes the template with the given context and writes to writer (io.Writer)
-// on success. C
+// on success. Context can be nil. Nothing is written on error; instead the error
+// is being returned.
+func (tpl *Template) ExecuteWriter(context Context, writer io.Writer) error {
+	buffer, err := tpl.execute(context)
+	if err != nil {
+		return err
+	}
+
+	l := buffer.Len()
+	n, werr := buffer.WriteTo(writer)
+	if int(n) != l {
+		panic(fmt.Sprintf("error on writing template: n(%d) != buffer.Len(%d)", n, l))
+	}
+	if werr != nil {
+		return &Error{
+			Filename: tpl.name,
+			Sender:   "execution",
+			ErrorMsg: werr.Error(),
+		}
+	}
+	return nil
+}
+
+// Executes the template and returns the rendered template as a []byte
+func (tpl *Template) ExecuteBytes(context Context) ([]byte, error) {
+	// Execute template
+	buffer, err := tpl.execute(context)
+	if err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+// Executes the template and returns the rendered template as a string
+func (tpl *Template) Execute(context Context) (string, error) {
+	// Execute template
+	buffer, err := tpl.execute(context)
+	if err != nil {
+		return "", err
+	}
+
+	return buffer.String(), nil
+
+}
