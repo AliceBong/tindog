@@ -66,4 +66,58 @@ func (v *Value) IsInteger() bool {
 		v.getResolvedValue().Kind() == reflect.Uint8 ||
 		v.getResolvedValue().Kind() == reflect.Uint16 ||
 		v.getResolvedValue().Kind() == reflect.Uint32 ||
-		v.getResolvedValu
+		v.getResolvedValue().Kind() == reflect.Uint64
+}
+
+// Checks whether the underlying value is either an integer
+// or a float.
+func (v *Value) IsNumber() bool {
+	return v.IsInteger() || v.IsFloat()
+}
+
+// Checks whether the underlying value is NIL
+func (v *Value) IsNil() bool {
+	//fmt.Printf("%+v\n", v.getResolvedValue().Type().String())
+	return !v.getResolvedValue().IsValid()
+}
+
+// Returns a string for the underlying value. If this value is not
+// of type string, pongo2 tries to convert it. Currently the following
+// types for underlying values are supported:
+//
+//     1. string
+//     2. int/uint (any size)
+//     3. float (any precision)
+//     4. bool
+//     5. time.Time
+//     6. String() will be called on the underlying value if provided
+//
+// NIL values will lead to an empty string. Unsupported types are leading
+// to their respective type name.
+func (v *Value) String() string {
+	if v.IsNil() {
+		return ""
+	}
+
+	switch v.getResolvedValue().Kind() {
+	case reflect.String:
+		return v.getResolvedValue().String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(v.getResolvedValue().Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(v.getResolvedValue().Uint(), 10)
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("%f", v.getResolvedValue().Float())
+	case reflect.Bool:
+		if v.Bool() {
+			return "True"
+		} else {
+			return "False"
+		}
+	case reflect.Struct:
+		if t, ok := v.Interface().(fmt.Stringer); ok {
+			return t.String()
+		}
+	}
+
+	logf("Value.String() n
