@@ -120,4 +120,44 @@ func (v *Value) String() string {
 		}
 	}
 
-	logf("Value.String() n
+	logf("Value.String() not implemented for type: %s\n", v.getResolvedValue().Kind().String())
+	return v.getResolvedValue().String()
+}
+
+// Returns the underlying value as an integer (converts the underlying
+// value, if necessary). If it's not possible to convert the underlying value,
+// it will return 0.
+func (v *Value) Integer() int {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return int(v.getResolvedValue().Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return int(v.getResolvedValue().Uint())
+	case reflect.Float32, reflect.Float64:
+		return int(v.getResolvedValue().Float())
+	case reflect.String:
+		// Try to convert from string to int (base 10)
+		f, err := strconv.ParseFloat(v.getResolvedValue().String(), 64)
+		if err != nil {
+			return 0
+		}
+		return int(f)
+	default:
+		logf("Value.Integer() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return 0
+	}
+}
+
+// Returns the underlying value as a float (converts the underlying
+// value, if necessary). If it's not possible to convert the underlying value,
+// it will return 0.0.
+func (v *Value) Float() float64 {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return float64(v.getResolvedValue().Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return float64(v.getResolvedValue().Uint())
+	case reflect.Float32, reflect.Float64:
+		return v.getResolvedValue().Float()
+	case reflect.String:
+		// Try to convert from string to float64
