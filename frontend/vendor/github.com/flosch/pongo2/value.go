@@ -160,4 +160,54 @@ func (v *Value) Float() float64 {
 	case reflect.Float32, reflect.Float64:
 		return v.getResolvedValue().Float()
 	case reflect.String:
-		// Try to convert from string to float64
+		// Try to convert from string to float64 (base 10)
+		f, err := strconv.ParseFloat(v.getResolvedValue().String(), 64)
+		if err != nil {
+			return 0.0
+		}
+		return f
+	default:
+		logf("Value.Float() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return 0.0
+	}
+}
+
+// Returns the underlying value as bool. If the value is not bool, false
+// will always be returned. If you're looking for true/false-evaluation of the
+// underlying value, have a look on the IsTrue()-function.
+func (v *Value) Bool() bool {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Bool:
+		return v.getResolvedValue().Bool()
+	default:
+		logf("Value.Bool() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return false
+	}
+}
+
+// Tries to evaluate the underlying value the Pythonic-way:
+//
+// Returns TRUE in one the following cases:
+//
+//     * int != 0
+//     * uint != 0
+//     * float != 0.0
+//     * len(array/chan/map/slice/string) > 0
+//     * bool == true
+//     * underlying value is a struct
+//
+// Otherwise returns always FALSE.
+func (v *Value) IsTrue() bool {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.getResolvedValue().Int() != 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return v.getResolvedValue().Uint() != 0
+	case reflect.Float32, reflect.Float64:
+		return v.getResolvedValue().Float() != 0
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
+		return v.getResolvedValue().Len() > 0
+	case reflect.Bool:
+		return v.getResolvedValue().Bool()
+	case reflect.Struct:
+		return true // struct instance is
