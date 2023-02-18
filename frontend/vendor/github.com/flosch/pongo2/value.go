@@ -263,4 +263,53 @@ func (v *Value) Len() int {
 	}
 }
 
-// Slices an array, slice 
+// Slices an array, slice or string. Otherwise it will
+// return an empty []int.
+func (v *Value) Slice(i, j int) *Value {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Array, reflect.Slice:
+		return AsValue(v.getResolvedValue().Slice(i, j).Interface())
+	case reflect.String:
+		runes := []rune(v.getResolvedValue().String())
+		return AsValue(string(runes[i:j]))
+	default:
+		logf("Value.Slice() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return AsValue([]int{})
+	}
+}
+
+// Get the i-th item of an array, slice or string. Otherwise
+// it will return NIL.
+func (v *Value) Index(i int) *Value {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Array, reflect.Slice:
+		if i >= v.Len() {
+			return AsValue(nil)
+		}
+		return AsValue(v.getResolvedValue().Index(i).Interface())
+	case reflect.String:
+		//return AsValue(v.getResolvedValue().Slice(i, i+1).Interface())
+		s := v.getResolvedValue().String()
+		runes := []rune(s)
+		if i < len(runes) {
+			return AsValue(string(runes[i]))
+		}
+		return AsValue("")
+	default:
+		logf("Value.Slice() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return AsValue([]int{})
+	}
+}
+
+// Checks whether the underlying value (which must be of type struct, map,
+// string, array or slice) contains of another Value (e. g. used to check
+// whether a struct contains of a specific field or a map contains a specific key).
+//
+// Example:
+//     AsValue("Hello, World!").Contains(AsValue("World")) == true
+func (v *Value) Contains(other *Value) bool {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Struct:
+		field_value := v.getResolvedValue().FieldByName(other.String())
+		return field_value.IsValid()
+	case
