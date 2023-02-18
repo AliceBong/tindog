@@ -312,4 +312,51 @@ func (v *Value) Contains(other *Value) bool {
 	case reflect.Struct:
 		field_value := v.getResolvedValue().FieldByName(other.String())
 		return field_value.IsValid()
-	case
+	case reflect.Map:
+		var map_value reflect.Value
+		switch other.Interface().(type) {
+		case int:
+			map_value = v.getResolvedValue().MapIndex(other.getResolvedValue())
+		case string:
+			map_value = v.getResolvedValue().MapIndex(other.getResolvedValue())
+		default:
+			logf("Value.Contains() does not support lookup type '%s'\n", other.getResolvedValue().Kind().String())
+			return false
+		}
+
+		return map_value.IsValid()
+	case reflect.String:
+		return strings.Contains(v.getResolvedValue().String(), other.String())
+
+	// TODO: reflect.Array, reflect.Slice
+
+	default:
+		logf("Value.Contains() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return false
+	}
+}
+
+// Checks whether the underlying value is of type array, slice or string.
+// You normally would use CanSlice() before using the Slice() operation.
+func (v *Value) CanSlice() bool {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Array, reflect.Slice, reflect.String:
+		return true
+	}
+	return false
+}
+
+// Iterates over a map, array, slice or a string. It calls the
+// function's first argument for every value with the following arguments:
+//
+//     idx      current 0-index
+//     count    total amount of items
+//     key      *Value for the key or item
+//     value    *Value (only for maps, the respective value for a specific key)
+//
+// If the underlying value has no items or is not one of the types above,
+// the empty function (function's second argument) will be called.
+func (v *Value) Iterate(fn func(idx, count int, key, value *Value) bool, empty func()) {
+	v.IterateOrder(fn, empty, false)
+}
+
