@@ -210,4 +210,57 @@ func (v *Value) IsTrue() bool {
 	case reflect.Bool:
 		return v.getResolvedValue().Bool()
 	case reflect.Struct:
-		return true // struct instance is
+		return true // struct instance is always true
+	default:
+		logf("Value.IsTrue() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return false
+	}
+}
+
+// Tries to negate the underlying value. It's mainly used for
+// the NOT-operator and in conjunction with a call to
+// return_value.IsTrue() afterwards.
+//
+// Example:
+//     AsValue(1).Negate().IsTrue() == false
+func (v *Value) Negate() *Value {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if v.Integer() != 0 {
+			return AsValue(0)
+		} else {
+			return AsValue(1)
+		}
+	case reflect.Float32, reflect.Float64:
+		if v.Float() != 0.0 {
+			return AsValue(float64(0.0))
+		} else {
+			return AsValue(float64(1.1))
+		}
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
+		return AsValue(v.getResolvedValue().Len() == 0)
+	case reflect.Bool:
+		return AsValue(!v.getResolvedValue().Bool())
+	default:
+		logf("Value.IsTrue() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return AsValue(true)
+	}
+}
+
+// Returns the length for an array, chan, map, slice or string.
+// Otherwise it will return 0.
+func (v *Value) Len() int {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice:
+		return v.getResolvedValue().Len()
+	case reflect.String:
+		runes := []rune(v.getResolvedValue().String())
+		return len(runes)
+	default:
+		logf("Value.Len() not available for type: %s\n", v.getResolvedValue().Kind().String())
+		return 0
+	}
+}
+
+// Slices an array, slice 
