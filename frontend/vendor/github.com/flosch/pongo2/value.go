@@ -360,3 +360,60 @@ func (v *Value) Iterate(fn func(idx, count int, key, value *Value) bool, empty f
 	v.IterateOrder(fn, empty, false)
 }
 
+// Like Value.Iterate, but can iterate through an array/slice/string in reverse. Does
+// not affect the iteration through a map because maps don't have any particular order.
+func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, empty func(), reverse bool) {
+	switch v.getResolvedValue().Kind() {
+	case reflect.Map:
+		// Reverse not needed for maps, since they are not ordered
+		keys := v.getResolvedValue().MapKeys()
+		keyLen := len(keys)
+		for idx, key := range keys {
+			value := v.getResolvedValue().MapIndex(key)
+			if !fn(idx, keyLen, &Value{val: key}, &Value{val: value}) {
+				return
+			}
+		}
+		if keyLen == 0 {
+			empty()
+		}
+		return // done
+	case reflect.Array, reflect.Slice:
+		itemCount := v.getResolvedValue().Len()
+		if itemCount > 0 {
+			if reverse {
+				for i := itemCount - 1; i >= 0; i-- {
+					if !fn(i, itemCount, &Value{val: v.getResolvedValue().Index(i)}, nil) {
+						return
+					}
+				}
+			} else {
+				for i := 0; i < itemCount; i++ {
+					if !fn(i, itemCount, &Value{val: v.getResolvedValue().Index(i)}, nil) {
+						return
+					}
+				}
+			}
+		} else {
+			empty()
+		}
+		return // done
+	case reflect.String:
+		// TODO: Not utf8-compatible (utf8-decoding neccessary)
+		charCount := v.getResolvedValue().Len()
+		if charCount > 0 {
+			if reverse {
+				for i := charCount - 1; i >= 0; i-- {
+					if !fn(i, charCount, &Value{val: v.getResolvedValue().Slice(i, i+1)}, nil) {
+						return
+					}
+				}
+			} else {
+				for i := 0; i < charCount; i++ {
+					if !fn(i, charCount, &Value{val: v.getResolvedValue().Slice(i, i+1)}, nil) {
+						return
+					}
+				}
+			}
+		} else {
+			empty()
