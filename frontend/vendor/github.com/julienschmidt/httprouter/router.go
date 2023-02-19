@@ -50,4 +50,45 @@
 //  Requests:
 //   /blog/go/request-routers            match: category="go", post="request-routers"
 //   /blog/go/request-routers/           no match, but the router would redirect
-//   /blog/go/                           n
+//   /blog/go/                           no match
+//   /blog/go/request-routers/comments   no match
+//
+// Catch-all parameters match anything until the path end, including the
+// directory index (the '/' before the catch-all). Since they match anything
+// until the end, catch-all paramerters must always be the final path element.
+//  Path: /files/*filepath
+//
+//  Requests:
+//   /files/                             match: filepath="/"
+//   /files/LICENSE                      match: filepath="/LICENSE"
+//   /files/templates/article.html       match: filepath="/templates/article.html"
+//   /files                              no match, but the router would redirect
+//
+// The value of parameters is saved as a slice of the Param struct, consisting
+// each of a key and a value. The slice is passed to the Handle func as a third
+// parameter.
+// There are two ways to retrieve the value of a parameter:
+//  // by the name of the parameter
+//  user := ps.ByName("user") // defined by :user or *user
+//
+//  // by the index of the parameter. This way you can also get the name (key)
+//  thirdKey   := ps[2].Key   // the name of the 3rd parameter
+//  thirdValue := ps[2].Value // the value of the 3rd parameter
+package httprouter
+
+import (
+	"net/http"
+)
+
+// Handle is a function that can be registered to a route to handle HTTP
+// requests. Like http.HandlerFunc, but has a third parameter for the values of
+// wildcards (variables).
+type Handle func(http.ResponseWriter, *http.Request, Params)
+
+// Param is a single URL parameter, consisting of a key and a value.
+type Param struct {
+	Key   string
+	Value string
+}
+
+// Params is 
