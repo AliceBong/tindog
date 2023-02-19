@@ -417,3 +417,23 @@ func (v *Value) IterateOrder(fn func(idx, count int, key, value *Value) bool, em
 			}
 		} else {
 			empty()
+		}
+		return // done
+	default:
+		logf("Value.Iterate() not available for type: %s\n", v.getResolvedValue().Kind().String())
+	}
+	empty()
+}
+
+// Gives you access to the underlying value.
+func (v *Value) Interface() interface{} {
+	if v.val.IsValid() {
+		return v.val.Interface()
+	}
+	return nil
+}
+
+// Checks whether two values are containing the same value or object.
+func (v *Value) EqualValueTo(other *Value) bool {
+	return v.Interface() == other.Interface()
+}
