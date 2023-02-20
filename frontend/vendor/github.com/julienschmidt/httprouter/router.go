@@ -128,4 +128,50 @@ type Router struct {
 	// all other request methods.
 	// For example /FOO and /..//Foo could be redirected to /foo.
 	// RedirectTrailingSlash is independent of this option.
-	RedirectFixedPath 
+	RedirectFixedPath bool
+
+	// If enabled, the router checks if another method is allowed for the
+	// current route, if the current request can not be routed.
+	// If this is the case, the request is answered with 'Method Not Allowed'
+	// and HTTP status code 405.
+	// If no other Method is allowed, the request is delegated to the NotFound
+	// handler.
+	HandleMethodNotAllowed bool
+
+	// Configurable http.HandlerFunc which is called when no matching route is
+	// found. If it is not set, http.NotFound is used.
+	NotFound http.HandlerFunc
+
+	// Configurable http.HandlerFunc which is called when a request
+	// cannot be routed and HandleMethodNotAllowed is true.
+	// If it is not set, http.Error with http.StatusMethodNotAllowed is used.
+	MethodNotAllowed http.HandlerFunc
+
+	// Function to handle panics recovered from http handlers.
+	// It should be used to generate a error page and return the http error code
+	// 500 (Internal Server Error).
+	// The handler can be used to keep your server from crashing because of
+	// unrecovered panics.
+	PanicHandler func(http.ResponseWriter, *http.Request, interface{})
+}
+
+// Make sure the Router conforms with the http.Handler interface
+var _ http.Handler = New()
+
+// New returns a new initialized Router.
+// Path auto-correction, including trailing slashes, is enabled by default.
+func New() *Router {
+	return &Router{
+		RedirectTrailingSlash:  true,
+		RedirectFixedPath:      true,
+		HandleMethodNotAllowed: true,
+	}
+}
+
+// GET is a shortcut for router.Handle("GET", path, handle)
+func (r *Router) GET(path string, handle Handle) {
+	r.Handle("GET", path, handle)
+}
+
+// HEAD is a shortcut for router.Handle("HEAD", path, handle)
+fun
