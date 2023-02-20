@@ -174,4 +174,61 @@ func (r *Router) GET(path string, handle Handle) {
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
-fun
+func (r *Router) HEAD(path string, handle Handle) {
+	r.Handle("HEAD", path, handle)
+}
+
+// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
+func (r *Router) OPTIONS(path string, handle Handle) {
+	r.Handle("OPTIONS", path, handle)
+}
+
+// POST is a shortcut for router.Handle("POST", path, handle)
+func (r *Router) POST(path string, handle Handle) {
+	r.Handle("POST", path, handle)
+}
+
+// PUT is a shortcut for router.Handle("PUT", path, handle)
+func (r *Router) PUT(path string, handle Handle) {
+	r.Handle("PUT", path, handle)
+}
+
+// PATCH is a shortcut for router.Handle("PATCH", path, handle)
+func (r *Router) PATCH(path string, handle Handle) {
+	r.Handle("PATCH", path, handle)
+}
+
+// DELETE is a shortcut for router.Handle("DELETE", path, handle)
+func (r *Router) DELETE(path string, handle Handle) {
+	r.Handle("DELETE", path, handle)
+}
+
+// Handle registers a new request handle with the given path and method.
+//
+// For GET, POST, PUT, PATCH and DELETE requests the respective shortcut
+// functions can be used.
+//
+// This function is intended for bulk loading and to allow the usage of less
+// frequently used, non-standardized or custom methods (e.g. for internal
+// communication with a proxy).
+func (r *Router) Handle(method, path string, handle Handle) {
+	if path[0] != '/' {
+		panic("path must begin with '/' in path '" + path + "'")
+	}
+
+	if r.trees == nil {
+		r.trees = make(map[string]*node)
+	}
+
+	root := r.trees[method]
+	if root == nil {
+		root = new(node)
+		r.trees[method] = root
+	}
+
+	root.addRoute(path, handle)
+}
+
+// Handler is an adapter which allows the usage of an http.Handler as a
+// request handle.
+fu
