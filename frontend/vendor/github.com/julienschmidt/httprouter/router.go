@@ -91,4 +91,41 @@ type Param struct {
 	Value string
 }
 
-// Params is 
+// Params is a Param-slice, as returned by the router.
+// The slice is ordered, the first URL parameter is also the first slice value.
+// It is therefore safe to read values by the index.
+type Params []Param
+
+// ByName returns the value of the first Param which key matches the given name.
+// If no matching Param is found, an empty string is returned.
+func (ps Params) ByName(name string) string {
+	for i := range ps {
+		if ps[i].Key == name {
+			return ps[i].Value
+		}
+	}
+	return ""
+}
+
+// Router is a http.Handler which can be used to dispatch requests to different
+// handler functions via configurable routes
+type Router struct {
+	trees map[string]*node
+
+	// Enables automatic redirection if the current route can't be matched but a
+	// handler for the path with (without) the trailing slash exists.
+	// For example if /foo/ is requested but a route only exists for /foo, the
+	// client is redirected to /foo with http status code 301 for GET requests
+	// and 307 for all other request methods.
+	RedirectTrailingSlash bool
+
+	// If enabled, the router tries to fix the current request path, if no
+	// handle is registered for it.
+	// First superfluous path elements like ../ or // are removed.
+	// Afterwards the router does a case-insensitive lookup of the cleaned path.
+	// If a handle can be found for this route, the router makes a redirection
+	// to the corrected path with status code 301 for GET requests and 307 for
+	// all other request methods.
+	// For example /FOO and /..//Foo could be redirected to /foo.
+	// RedirectTrailingSlash is independent of this option.
+	RedirectFixedPath 
