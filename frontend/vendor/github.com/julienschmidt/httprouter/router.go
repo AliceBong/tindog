@@ -324,4 +324,40 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				)
 				if found {
 					req.URL.Path = string(fixedPath)
-					http.Redirect(w, req, req.URL.Str
+					http.Redirect(w, req, req.URL.String(), code)
+					return
+				}
+			}
+		}
+	}
+
+	// Handle 405
+	if r.HandleMethodNotAllowed {
+		for method := range r.trees {
+			// Skip the requested method - we already tried this one
+			if method == req.Method {
+				continue
+			}
+
+			handle, _, _ := r.trees[method].getValue(req.URL.Path)
+			if handle != nil {
+				if r.MethodNotAllowed != nil {
+					r.MethodNotAllowed(w, req)
+				} else {
+					http.Error(w,
+						http.StatusText(http.StatusMethodNotAllowed),
+						http.StatusMethodNotAllowed,
+					)
+				}
+				return
+			}
+		}
+	}
+
+	// Handle 404
+	if r.NotFound != nil {
+		r.NotFound(w, req)
+	} else {
+		http.NotFound(w, req)
+	}
+}
